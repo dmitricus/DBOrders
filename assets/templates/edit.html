@@ -1,0 +1,38 @@
+{{define "body"}}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Edt order</title>
+    </head>
+    <body>
+        <h3>Edit Order</h3>
+        <form method="POST">
+            <input type="hidden" name="id" value="{{.ID}}" />
+            <label>Model</label><br>
+            <input type="text" name="DocType" value="{{.DocType}}" /><br><br>
+            <label>Company</label><br>
+            <input type="text" name="KindOfDoc" value="{{.KindOfDoc}}" /><br><br>
+            <label>Price</label><br>
+            <input type="text" name="DocLabel" value="{{.DocLabel}}" /><br><br>
+            <label>Price</label><br>
+            <input type="date" name="RegDate" value="{{.RegDate}}" /><br><br>
+            <label>Price</label><br>
+            <input type="text" name="RegNumber" value="{{.RegNumber}}" /><br><br>
+            <label>Price</label><br>
+            <input type="text" name="Description" value="{{.Description}}" /><br><br>
+            <label>Price</label><br>
+            <input type="text" name="FileOriginal" value="{{.FileOriginal}}" /><br><br>
+            <label>Price</label><br>
+            <input type="text" name="FileCopy" value="{{.FileCopy}}" /><br><br>
+            <label>Price</label><br>
+            <input type="text" name="Author" value="{{.Author}}" /><br><br>
+            <label>Price</label><br>
+            <input type="text" name="Current" value="{{.Current}}" /><br><br>
+            <label>Price</label><br>
+            <input type="text" name="OldOrderID" value="{{.OldOrderID}}" /><br><br>
+            <input type="submit" value="Send" />
+        </form>
+    </body>
+</html>
+{{end}}

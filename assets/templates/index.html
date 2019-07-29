@@ -1,0 +1,25 @@
+{{define "body"}}
+<table class="table">
+    <thead><th scope="col">№</th><th scope="col">Тип</th><th scope="col">Вид</th><th scope="col">Штамп</th><th scope="col">Дата регистрации</th>
+        <th scope="col">Регистрационный номер</th><th scope="col">Описание</th><th scope="col">Оригинал</th><th scope="col">Копия</th><th scope="col">Автор</th>
+        <th scope="col">Флаг</th><th scope="col">OldOrderID</th></thead>
+    {{range . }}
+    <tr>
+        <td scope="row">{{.ID}}</td>
+        <td scope="row">{{.DocType}}</td>
+        <td scope="row">{{.KindOfDoc}}</td>
+        <td scope="row">{{.DocLabel}}</td>
+        <td scope="row">{{.RegDate}}</td>
+        <td scope="row">{{.RegNumber}}</td>
+        <td scope="row">{{.Description}}</td>
+        <td scope="row">{{.FileOriginal}}</td>
+        <td scope="row">{{.FileCopy}}</td>
+        <td scope="row">{{.Author}}</td>
+        <td scope="row">{{.Current}}</td>
+        <td scope="row">{{.OldOrderID}}</td>
+        <td scope="row"><a href="/edit/{{.Id}}">Изменить</a>|
+            <a href="/delete/{{.Id}}">Удалить</a>
+    </tr>
+    {{end}}
+</table>
+{{end}}
