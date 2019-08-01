@@ -1,0 +1,29 @@
+{{define "body"}}
+<h3>Edit Order</h3>
+<form method="POST">
+    <input type="hidden" name="id" value="{{.ID}}" />
+    <label>DocType</label><br>
+    <input type="text" name="DocType" value="{{.DocType}}" /><br><br>
+    <label>KindOfDoc</label><br>
+    <input type="text" name="KindOfDoc" value="{{.KindOfDoc}}" /><br><br>
+    <label>DocLabel</label><br>
+    <input type="text" name="DocLabel" value="{{.DocLabel}}" /><br><br>
+    <label>RegDate</label><br>
+    <input type="date" name="RegDate" value="{{.RegDate}}" /><br><br>
+    <label>RegNumber</label><br>
+    <input type="text" name="RegNumber" value="{{.RegNumber}}" /><br><br>
+    <label>Description</label><br>
+    <input type="text" name="Description" value="{{.Description}}" /><br><br>
+    <label>FileOriginal</label><br>
+    <input type="text" name="FileOriginal" value="{{.FileOriginal}}" /><br><br>
+    <label>FileCopy</label><br>
+    <input type="text" name="FileCopy" value="{{.FileCopy}}" /><br><br>
+    <label>Author</label><br>
+    <input type="text" name="Author" value="{{.Author}}" /><br><br>
+    <label>Current</label><br>
+    <input type="text" name="Current" value="{{.Current}}" /><br><br>
+    <label>OldOrderID</label><br>
+    <input type="text" name="OldOrderID" value="{{.OldOrderID}}" /><br><br>
+    <input type="submit" value="Send" />
+</form>
+{{end}}

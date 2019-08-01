@@ -1,11 +1,15 @@
 package model
 
 type db interface {
-	SelectUsers() ([]*User, error)
-	SelectUser(aut map[string]interface{}) ([]*User, bool)
-	SelectOrders() ([]Order, error)
-	DeleteOrder(id string) error
-	EditOrders(id string) (Order, error)
-	UpdateOrders(ID, DocType, KindOfDoc, DocLabel, RegDate, RegNumber, Description, Author, FileOriginal, FileCopy, Current, OldOrderID string) error
-	CreateOrders(ID, DocType, KindOfDoc, DocLabel, RegDate, RegNumber, Description, Author, FileOriginal, FileCopy, Current, OldOrderID string) error
+	GetUsers() ([]User, error)
+	GetUser(id int64) (User, error)
+	GetUserByUsername(username string) (User, error)
+	CreateUser(user User) error
+	UpdateUser(user User) error
+	DeleteUser(id int64) error
+	GetOrders() ([]Order, error)
+	GetOrder() (Order, error)
+	DeleteOrder(id int64) error
+	UpdateOrder(order Order) error
+	CreateOrder(order Order) error
 }

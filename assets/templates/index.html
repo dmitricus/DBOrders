@@ -1,25 +1,47 @@
 {{define "body"}}
-<table class="table">
-    <thead><th scope="col">№</th><th scope="col">Тип</th><th scope="col">Вид</th><th scope="col">Штамп</th><th scope="col">Дата регистрации</th>
-        <th scope="col">Регистрационный номер</th><th scope="col">Описание</th><th scope="col">Оригинал</th><th scope="col">Копия</th><th scope="col">Автор</th>
-        <th scope="col">Флаг</th><th scope="col">OldOrderID</th></thead>
-    {{range . }}
-    <tr>
-        <td scope="row">{{.ID}}</td>
-        <td scope="row">{{.DocType}}</td>
-        <td scope="row">{{.KindOfDoc}}</td>
-        <td scope="row">{{.DocLabel}}</td>
-        <td scope="row">{{.RegDate}}</td>
-        <td scope="row">{{.RegNumber}}</td>
-        <td scope="row">{{.Description}}</td>
-        <td scope="row">{{.FileOriginal}}</td>
-        <td scope="row">{{.FileCopy}}</td>
-        <td scope="row">{{.Author}}</td>
-        <td scope="row">{{.Current}}</td>
-        <td scope="row">{{.OldOrderID}}</td>
-        <td scope="row"><a href="/edit/{{.Id}}">Изменить</a>|
-            <a href="/delete/{{.Id}}">Удалить</a>
-    </tr>
-    {{end}}
-</table>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Статистика</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group mr-2">
+        <button class="btn btn-sm btn-outline-secondary">Share</button>
+        <button class="btn btn-sm btn-outline-secondary">Export</button>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle">
+        <span data-feather="calendar"></span>
+        This week
+        </button>
+    </div>
+</div>
+<canvas class="my-4" id="myChart" width="900" height="380"></canvas>
+<!-- Graphs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.1/Chart.min.js"></script>
+<script>
+  var ctx = document.getElementById("myChart");
+  var myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"],
+      datasets: [{
+        data: [153, 213, 184, 240, 234, 240, 120, 0, 0, 0, 0, 0],
+        lineTension: 0,
+        backgroundColor: 'transparent',
+        borderColor: '#007bff',
+        borderWidth: 4,
+        pointBackgroundColor: '#007bff'
+      }]
+    },
+    options: {
+      scales: {
+        yAxes: [{
+          ticks: {
+            beginAtZero: false
+          }
+        }]
+      },
+      legend: {
+        display: false,
+      }
+    }
+  });
+</script>
 {{end}}
