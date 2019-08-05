@@ -1,5 +1,9 @@
 package model
 
+import (
+	"time"
+)
+
 type db interface {
 	GetUsers() ([]User, error)
 	GetUser(id int64) (User, error)
@@ -7,9 +11,11 @@ type db interface {
 	CreateUser(user User) error
 	UpdateUser(user User) error
 	DeleteUser(id int64) error
-	GetOrders() ([]Order, error)
-	GetOrder() (Order, error)
+	GetOrders(limit, offset int) ([]Order, error)
+	GetOrder(id int64) (Order, error)
 	DeleteOrder(id int64) error
 	UpdateOrder(order Order) error
 	CreateOrder(order Order) error
+	GetDateOrders(startDate, endDate time.Time, limit, offset int) ([]Order, error)
+	GetCountDateOrders(startDate, endDate time.Time) (int, error)
 }

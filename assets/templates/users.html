@@ -6,7 +6,7 @@
             <th scope="col">Электронная почта</th><th scope="col">Права администратора</th><!--<th scope="col">Удалить</th>--></thead>
         {{range . }}
         <tr>
-            <td scope="row"><a href="/edit/{{.ID}}">Изменить</a>
+            <td scope="row"><a href="/users/edit/{{.ID}}">Изменить</a>
             <td scope="row">{{.ID}}</td>
             <td scope="row">{{.Username}}</td>
             <td scope="row">{{.Password}}</td>

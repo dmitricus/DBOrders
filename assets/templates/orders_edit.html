@@ -1,0 +1,31 @@
+{{define "body"}}
+<h3>Edit Order</h3>
+<form method="POST">
+    <input type="hidden" name="id" value="{{.ID}}" />
+    <label>Тип документа</label><br>
+    <input type="text" name="DocType" value="{{.DocType}}" /><br><br>
+    <label>Вид документа</label><br>
+    <input type="text" name="KindOfDoc" value="{{.KindOfDoc}}" /><br><br>
+    <label>Метка секретности</label><br>
+    <input type="text" name="DocLabel" value="{{.DocLabel}}" /><br><br>
+    <label>Дата регистрации</label><br>
+    <input type="date" name="RegDate" value="{{.RegDate}}" /><br><br>
+    <label>Регистрационный номер</label><br>
+    <input type="text" name="RegNumber" value="{{.RegNumber}}" /><br><br>
+    <label>Описание</label><br>
+    <input type="text" name="Description" value="{{.Description}}" /><br><br>
+    <label>Оригинал</label><br>
+    <input type="text" name="FileOriginal" value="{{.FileOriginal}}" /><br><br>
+    <label>Копия</label><br>
+    <input type="text" name="FileCopy" value="{{.FileCopy}}" /><br><br>
+    <label>Автор</label><br>
+    <input type="text" name="Author" value="{{.Author}}" /><br><br>
+    <label>Активность</label><br>
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" value="{{.Current}}" checked>
+        </div><br><br>
+    <label>Старый приказ</label><br>
+    <input type="text" name="OldOrderID" value="{{.OldOrderID}}" /><br><br>
+    <input type="submit" value="Send" />
+</form>
+{{end}}

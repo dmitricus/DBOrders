@@ -2,8 +2,8 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
+	"time"
 
 	"../model"
 
@@ -70,7 +70,7 @@ func (p *pgDb) createTablesIfNotExist() error {
 		file_original TEXT NOT NULL,
 		file_copy TEXT NOT NULL,
 		current BOOLEAN NOT NULL DEFAULT false,
-		old_order_id SERIAL NOT NULL);
+		old_order_id SERIAL);
 
     `
 	if rows, err := p.dbConn.Query(create_sql); err != nil {
@@ -103,11 +103,21 @@ func (p *pgDb) prepareSqlStatements() (err error) {
 	return nil
 }
 
+func checkCount(rows *sql.Rows) (count int) {
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			log.Printf("error checkCount: %v", err)
+		}
+	}
+	return count
+}
+
 func (p *pgDb) GetUsers() ([]model.User, error) {
 	users := []model.User{}
 	rows, err := p.dbConn.Query("SELECT id, username, password, created, email, is_admin FROM users")
 	if err != nil {
-		fmt.Println(err)
+		log.Printf("error GetUsers: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -116,7 +126,7 @@ func (p *pgDb) GetUsers() ([]model.User, error) {
 		user := model.User{}
 		err := rows.Scan(&user.ID, &user.Username, &user.Password, &user.Created, &user.Email, &user.IsAdmin)
 		if err != nil {
-			fmt.Println(err)
+			log.Printf("error GetUsers: %v", err)
 			continue
 		}
 		users = append(users, user)
@@ -125,13 +135,12 @@ func (p *pgDb) GetUsers() ([]model.User, error) {
 }
 
 func (p *pgDb) GetUser(userID int64) (model.User, error) {
-	row := p.dbConn.QueryRow("SELECT id, username, password, created, email, is_admin FROM users WHERE id = $1", userID)
+	row := p.dbConn.QueryRow("SELECT id, username, created, email, is_admin FROM users WHERE id = $1", userID)
 
 	user := model.User{}
-	err := row.Scan(&user.ID, &user.Username, &user.Password, &user.Created, &user.Email, &user.IsAdmin)
-	if err == sql.ErrNoRows {
-		return user, err
-	} else if err != nil {
+	err := row.Scan(&user.ID, &user.Username, &user.Created, &user.Email, &user.IsAdmin)
+	if err != nil {
+		log.Printf("error GetUser: %v", err)
 		return user, err
 	}
 	return user, err
@@ -142,7 +151,7 @@ func (p *pgDb) CreateUser(user model.User) error {
 		&user.Username, &user.Password, &user.Created, &user.Email, &user.IsAdmin)
 
 	if err != nil {
-		log.Println(err)
+		log.Printf("error CreateUser: %v", err)
 		return err
 	}
 	return err
@@ -153,7 +162,7 @@ func (p *pgDb) UpdateUser(user model.User) error {
 		&user.Username, &user.Password, &user.Created, &user.Email, &user.IsAdmin, &user.ID)
 
 	if err != nil {
-		log.Println(err)
+		log.Printf("error UpdateUser: %v", err)
 		return err
 	}
 	return err
@@ -162,7 +171,7 @@ func (p *pgDb) UpdateUser(user model.User) error {
 func (p *pgDb) DeleteUser(id int64) error {
 	_, err := p.dbConn.Exec("DELETE from users where id = $1", id)
 	if err != nil {
-		log.Println(err)
+		log.Printf("error DeleteUser: %v", err)
 		return err
 	}
 	return err
@@ -172,32 +181,17 @@ func (p *pgDb) GetUserByUsername(username string) (model.User, error) {
 	row := p.dbConn.QueryRow("SELECT id, username, password, created, email, is_admin FROM users WHERE username = $1", username)
 	user := model.User{}
 	err := row.Scan(&user.ID, &user.Username, &user.Password, &user.Created, &user.Email, &user.IsAdmin)
-	if err == sql.ErrNoRows {
-		return user, err
-	} else if err != nil {
+	if err != nil {
+		log.Printf("error GetUserByUsername: %v", err)
 		return user, err
 	}
 	return user, err
 }
 
-func (p *pgDb) GetOrder(id int64) (model.Order, error) {
-	row := p.dbConn.QueryRow("SELECT id, username, password, created, email, is_admin FROM orders WHERE id = $1", id)
-
-	order := model.Order{}
-	err := row.Scan(&order.ID, &order.DocType, &order.KindOfDoc, &order.DocLabel, &order.RegDate, &order.RegNumber,
-		&order.Description, &order.Author, &order.FileOriginal, &order.FileCopy, &order.Current, &order.OldOrderID)
-	if err == sql.ErrNoRows {
-		return order, err
-	} else if err != nil {
-		return order, err
-	}
-	return order, err
-}
-
-func (p *pgDb) GetOrders() ([]model.Order, error) {
-	rows, err := p.dbConn.Query("SELECT * from orders")
+func (p *pgDb) GetOrders(limit, offset int) ([]model.Order, error) {
+	rows, err := p.dbConn.Query("SELECT * FROM orders ORDER BY reg_date DESC LIMIT $1 OFFSET $2", limit, offset)
 	if err != nil {
-		log.Println(err)
+		log.Printf("error GetOrders: %v", err)
 	}
 	defer rows.Close()
 	orders := []model.Order{}
@@ -207,7 +201,7 @@ func (p *pgDb) GetOrders() ([]model.Order, error) {
 		err := rows.Scan(&order.ID, &order.DocType, &order.KindOfDoc, &order.DocLabel, &order.RegDate, &order.RegNumber,
 			&order.Description, &order.Author, &order.FileOriginal, &order.FileCopy, &order.Current, &order.OldOrderID)
 		if err != nil {
-			fmt.Println(err)
+			log.Printf("error GetOrders: %v", err)
 			continue
 		}
 		orders = append(orders, order)
@@ -215,28 +209,28 @@ func (p *pgDb) GetOrders() ([]model.Order, error) {
 	return orders, err
 }
 
-func (p *pgDb) DeleteOrder(id int64) error {
-	_, err := p.dbConn.Exec("DELETE from orders where id = $1", id)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return err
-}
-
 // возвращаем пользователю страницу для редактирования объекта
 func (p *pgDb) GetOrder(id int64) (model.Order, error) {
 
-	row := p.dbConn.QueryRow("SELECT * from orders where id = $1", id)
+	row := p.dbConn.QueryRow("SELECT * FROM orders where id = $1", id)
 	order := model.Order{}
 	err := row.Scan(&order.ID, &order.DocType, &order.KindOfDoc, &order.DocLabel, &order.RegDate, &order.RegNumber,
 		&order.Description, &order.Author, &order.FileOriginal, &order.FileCopy, &order.Current, &order.OldOrderID)
 
 	if err != nil {
-		log.Println(err)
+		log.Printf("error GetOrder: %v", err)
 		return order, err
 	}
 	return order, err
+}
+
+func (p *pgDb) DeleteOrder(id int64) error {
+	_, err := p.dbConn.Exec("DELETE from orders where id = $1", id)
+	if err != nil {
+		log.Printf("error DeleteOrder: %v", err)
+		return err
+	}
+	return err
 }
 
 // получаем измененные данные и сохраняем их в БД
@@ -245,7 +239,7 @@ func (p *pgDb) UpdateOrder(order model.Order) error {
 		&order.DocType, &order.KindOfDoc, &order.DocLabel, &order.RegDate, &order.RegNumber, &order.Description, &order.Author, &order.FileOriginal, &order.FileCopy, &order.Current, &order.OldOrderID, &order.ID)
 
 	if err != nil {
-		log.Println(err)
+		log.Printf("error UpdateOrder: %v", err)
 		return err
 	}
 	return err
@@ -255,8 +249,37 @@ func (p *pgDb) CreateOrder(order model.Order) error {
 	_, err := p.dbConn.Exec("INSERT INTO orders (doc_type, kind_of_doc, doc_label, reg_date, reg_number, description, author, file_original, file_copy, current, old_order_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
 		&order.DocType, &order.KindOfDoc, &order.DocLabel, &order.RegDate, &order.RegNumber, &order.Description, &order.Author, &order.FileOriginal, &order.FileCopy, &order.Current, &order.OldOrderID)
 	if err != nil {
-		log.Println(err)
+		log.Printf("error CreateOrder: %v", err)
 		return err
 	}
 	return err
+}
+
+//WHERE DateField BETWEEN to_date('2010-01-01','YYYY-MM-DD') AND to_date('2010-01-02','YYYY-MM-DD')
+
+// возвращаем количество приказов в промежутки дат
+func (p *pgDb) GetDateOrders(startDate, endDate time.Time, limit, offset int) ([]model.Order, error) {
+	rows, err := p.dbConn.Query("SELECT * FROM orders WHERE reg_date >= to_date($1,'YYYY-MM-DD') AND reg_date <= to_date($2,'YYYY-MM-DD') ORDER BY reg_date DESC LIMIT $3 OFFSET $4", startDate, endDate, limit, offset)
+	orders := []model.Order{}
+	for rows.Next() {
+		order := model.Order{}
+		err := rows.Scan(&order.ID, &order.DocType, &order.KindOfDoc, &order.DocLabel, &order.RegDate, &order.RegNumber,
+			&order.Description, &order.Author, &order.FileOriginal, &order.FileCopy, &order.Current, &order.OldOrderID)
+		if err != nil {
+			log.Printf("error GetDateOrders: %v", err)
+			continue
+		}
+		orders = append(orders, order)
+	}
+	return orders, err
+}
+
+// возвращаем количество приказов в промежутки дат
+func (p *pgDb) GetCountDateOrders(startDate, endDate time.Time) (int, error) {
+	rows, err := p.dbConn.Query("SELECT COUNT(*) FROM orders WHERE reg_date >= to_date($1,'YYYY-MM-DD') AND reg_date <= to_date($2,'YYYY-MM-DD')", startDate, endDate)
+	if err != nil {
+		log.Printf("error GetCountDateOrders: %v", err)
+		return checkCount(rows), err
+	}
+	return checkCount(rows), err
 }

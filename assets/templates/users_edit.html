@@ -1,0 +1,10 @@
+{{define "body"}}
+<h3>Редактирование пользователя</h3>
+<form action="/edit/{{ .ID }}" method="POST">
+    <label>Имя пользователя</label><br>
+    <input type="text" name="username" value="{{.Username}}" /><br><br>
+    <label>Электронная почта</label><br>
+    <input type="text" name="email" value="{{.Email}}" /><br><br>
+    <input type="submit" value="Send" />
+</form>
+{{end}}
