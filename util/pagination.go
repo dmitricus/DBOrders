@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"math"
 	"reflect"
 )
@@ -75,7 +74,7 @@ func Pagination(limit, all, linkLimit, start int) []PaginationPage {
 	// дробим массив на чанки:
 	allPages := ArrayChunk(pagesArr, linkLimit)
 
-	fmt.Printf("%#v\n", allPages)
+	//fmt.Printf("%#v\n", allPages)
 	// получаем от клиента текущую страницу и передаем в поиск текущего блока ссылок
 	needChunk := searchPage(allPages, start)
 	//fmt.Printf("needChunk %#v\n", needChunk)

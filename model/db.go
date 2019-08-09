@@ -18,4 +18,14 @@ type db interface {
 	CreateOrder(order Order) error
 	GetDateOrders(startDate, endDate time.Time, limit, offset int) ([]Order, error)
 	GetCountDateOrders(startDate, endDate time.Time) (int, error)
+	//GetSearchOrders(docType, kindOfDoc, docLabel, regNumber, description, author string, startDate, endDate time.Time, limit, offset int) ([]Order, error)
+	GetDepartaments() ([]Departament, error)
+	GetDepartament(departamentID int64) (Departament, error)
+	CreateDepartament(departament Departament) error
+	CreateHBKindOfDoc(hbkind HBKindOfDoc) error
+	GetHBKindOfDoc() ([]HBKindOfDoc, error)
+	CreateHBDocLabel(hblabel HBDocLabel) error
+	GetHBDocLabel() ([]HBDocLabel, error)
+	CreateHBDocType(hbtype HBDocType) error
+	GetHBDocType() ([]HBDocType, error)
 }

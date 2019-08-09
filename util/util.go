@@ -17,8 +17,8 @@ type StatMonth struct {
 }
 
 // Форматирование времени
-func FormatTime(t time.Time) string {
-	return t.Format("2006-01-02") // Аналогично: YYYY-MM-DD
+func FormatDate(t time.Time, format string) string {
+	return t.Format(format) // Аналогично: YYYY-MM-DD
 }
 
 // Генерация начала и конец дат всех месяцев в текущем году

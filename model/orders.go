@@ -13,9 +13,8 @@ type Order struct {
 	RegDate      time.Time // Дата регистрации
 	RegNumber    string    // Регистрационный номер
 	Description  string    // Описание
-	Author       string    // Автор
+	Username     string    // Идентификатор пользователя
 	FileOriginal string    // Оригинальный файл
 	FileCopy     string    // Копия файла
 	Current      bool      // Флаг действия документа
-	OldOrderID   int64     // Идентификатор предыдущего приказа
 }

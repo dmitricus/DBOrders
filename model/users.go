@@ -10,4 +10,5 @@ type User struct {
 	Created  time.Time
 	Email    string
 	IsAdmin  bool
+	Title    string
 }

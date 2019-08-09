@@ -10,10 +10,14 @@
             <td scope="row">{{.ID}}</td>
             <td scope="row">{{.Username}}</td>
             <td scope="row">{{.Password}}</td>
-            <td scope="row">{{.Created}}</td>
+            <td scope="row">{{fdate .Created "03-01-2006"}}</td>
             <td scope="row">{{.Email}}</td>
-            <td scope="row">{{.IsAdmin}}</td>
-            <!--<td scope="row"><a href="/edit/{{.ID}}/delete" target="_new">Удалить</a>-->
+            <td scope="row">
+                <div class="form-check">
+                <input class="form-check-input" type="checkbox" value="{{.IsAdmin}}" {{if .IsAdmin}} checked disabled {{end}} disabled>
+                </div>
+            </td>
+            <!--<td scope="row"><a href="/edit/{{.ID}}/delete" target="_new">Удалить</a></td>-->
         </tr>
         {{end}}
     </table>
