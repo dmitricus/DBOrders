@@ -2,11 +2,12 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"time"
 
 	"../model"
-
+	"../util"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
@@ -295,9 +296,13 @@ func (p *pgDb) GetDateOrders(startDate, endDate time.Time, limit, offset int) ([
 	(SELECT name FROM hblabel WHERE hblabel.id = orders.doc_label_id) AS name, 
 	reg_date, reg_number, description, 
 	(SELECT username FROM users WHERE orders.user_id = users.id) AS username,
-	file_original, file_copy, current FROM orders WHERE reg_date >= to_date($1,'YYYY-MM-DD') AND 
-	reg_date <= to_date($2,'YYYY-MM-DD') ORDER BY reg_date DESC LIMIT $3 OFFSET $4`, startDate, endDate, limit, offset)
+	file_original, file_copy, current FROM orders WHERE reg_date BETWEEN $1 AND $2 ORDER BY reg_date DESC LIMIT $3 OFFSET $4`, util.FormatDate(startDate, "2006-01-02"), util.FormatDate(endDate, "2006-01-02"), limit, offset)
+
 	orders := []model.Order{}
+	if err != nil {
+		log.Printf("error GetDateOrders: %v", err)
+		return orders, err
+	}
 	for rows.Next() {
 		order := model.Order{}
 		err := rows.Scan(&order.ID, &order.DocType, &order.KindOfDoc, &order.DocLabel, &order.RegDate, &order.RegNumber,
@@ -311,16 +316,23 @@ func (p *pgDb) GetDateOrders(startDate, endDate time.Time, limit, offset int) ([
 	return orders, err
 }
 
-/*
 // возвращаем количество приказов в промежутки дат
-func (p *pgDb) GetSearchOrders(docType, kindOfDoc, docLabel, regNumber, description, string, user_id int64, startDate, endDate time.Time, limit, offset int) ([]model.Order, error) {
-	rows, err := p.dbConn.Query(`SELECT id, doc_type, kind_of_doc, doc_label, reg_date, reg_number, description,
+func (p *pgDb) GetDateUserByUsername(startDate, endDate time.Time, username string, limit, offset int) ([]model.Order, error) {
+	rows, err := p.dbConn.Query(`SELECT id, 
+	(SELECT name FROM hbtype WHERE hbtype.id = orders.doc_type_id) AS name, 
+	(SELECT name FROM hbkind WHERE hbkind.id = orders.kind_of_doc_id) AS name, 
+	(SELECT name FROM hblabel WHERE hblabel.id = orders.doc_label_id) AS name, 
+	reg_date, reg_number, description, 
 	(SELECT username FROM users WHERE orders.user_id = users.id) AS username,
-	file_original, file_copy, current FROM orders WHERE reg_date >= to_date($1,'YYYY-MM-DD')
-	AND reg_date <= to_date($2,'YYYY-MM-DD') AND doc_type = $3, kind_of_doc = $4, doc_label = $5, reg_number = $6,
-	description = $7, user_id = $9 ORDER BY reg_date DESC LIMIT $9 OFFSET $10`, startDate, endDate,
-	docType, kindOfDoc, docLabel, regNumber, description, userID, limit, offset)
+	file_original, file_copy, current FROM orders WHERE reg_date BETWEEN $1 AND $2 
+	AND user_id = (SELECT id FROM users WHERE users.username = $3) ORDER BY reg_date DESC LIMIT $4 OFFSET $5`,
+		util.FormatDate(startDate, "2006-01-02"), util.FormatDate(endDate, "2006-01-02"), username, limit, offset)
+
 	orders := []model.Order{}
+	if err != nil {
+		log.Printf("error GetDateOrders: %v", err)
+		return orders, err
+	}
 	for rows.Next() {
 		order := model.Order{}
 		err := rows.Scan(&order.ID, &order.DocType, &order.KindOfDoc, &order.DocLabel, &order.RegDate, &order.RegNumber,
@@ -332,10 +344,68 @@ func (p *pgDb) GetSearchOrders(docType, kindOfDoc, docLabel, regNumber, descript
 		orders = append(orders, order)
 	}
 	return orders, err
-}*/
+}
+
+// возвращаем количество приказов в промежутки дат
+func (p *pgDb) GetCountDateOrdersByUsername(startDate, endDate time.Time, username string) (int, error) {
+	rows, err := p.dbConn.Query("SELECT COUNT(*) FROM orders WHERE reg_date BETWEEN $1 AND $2 AND user_id = (SELECT id FROM users WHERE users.username = $3)", util.FormatDate(startDate, "2006-01-02"), util.FormatDate(endDate, "2006-01-02"), username)
+	if err != nil {
+		log.Printf("error GetCountDateOrders: %v", err)
+		return checkCount(rows), err
+	}
+	return checkCount(rows), err
+}
+
+// возвращаем количество приказов в промежутки дат
+func (p *pgDb) GetSearchOrders(order model.Order, startDate, endDate time.Time) ([]model.Order, error) {
+	rows, err := p.dbConn.Query(`WITH RECURSIVE r AS (SELECT id, 
+	(SELECT name FROM hbtype WHERE hbtype.id = orders.doc_type_id), 
+	(SELECT name FROM hbkind WHERE hbkind.id = orders.kind_of_doc_id), 
+	(SELECT name FROM hblabel WHERE hblabel.id = orders.doc_label_id), 
+	reg_date, reg_number, description,
+	(SELECT username FROM users WHERE orders.user_id = users.id),
+	file_original, file_copy, current FROM orders 
+	WHERE reg_date >= $1 AND reg_date <= $2
+	UNION SELECT id, 
+	(SELECT name FROM hbtype WHERE hbtype.id = orders.doc_type_id), 
+	(SELECT name FROM hbkind WHERE hbkind.id = orders.kind_of_doc_id), 
+	(SELECT name FROM hblabel WHERE hblabel.id = orders.doc_label_id), 
+	reg_date, reg_number, description,
+	(SELECT username FROM users WHERE orders.user_id = users.id),
+	file_original, file_copy, current FROM orders 
+	WHERE
+	to_tsvector((SELECT name FROM hbtype WHERE hbtype.id = orders.doc_type_id)) || 
+	to_tsvector((SELECT name FROM hbkind WHERE hbkind.id = orders.kind_of_doc_id)) || 
+	to_tsvector((SELECT name FROM hblabel WHERE hblabel.id = orders.doc_label_id)) || 
+	to_tsvector(reg_number) || 
+	to_tsvector(description) || 
+	to_tsvector((SELECT username FROM users WHERE orders.user_id = users.id)) 
+	@@ plainto_tsquery($3) ORDER BY reg_date DESC)
+	SELECT * FROM r`, util.FormatDate(startDate, "2006-01-02"), util.FormatDate(endDate, "2006-01-02"),
+		fmt.Sprintf("%q %s %s %v %s %s", order.DocType, order.KindOfDoc, order.DocLabel, order.RegNumber, order.Description, order.Username))
+
+	orders := []model.Order{}
+	if err != nil {
+		log.Printf("error GetSearchOrders: %v", err)
+		return orders, err
+	}
+
+	for rows.Next() {
+		order := model.Order{}
+		err := rows.Scan(&order.ID, &order.DocType, &order.KindOfDoc, &order.DocLabel, &order.RegDate, &order.RegNumber,
+			&order.Description, &order.Username, &order.FileOriginal, &order.FileCopy, &order.Current)
+		if err != nil {
+			log.Printf("error GetDateOrders: %v", err)
+			continue
+		}
+		orders = append(orders, order)
+	}
+	return orders, err
+}
+
 // возвращаем количество приказов в промежутки дат
 func (p *pgDb) GetCountDateOrders(startDate, endDate time.Time) (int, error) {
-	rows, err := p.dbConn.Query("SELECT COUNT(*) FROM orders WHERE reg_date >= to_date($1,'YYYY-MM-DD') AND reg_date <= to_date($2,'YYYY-MM-DD')", startDate, endDate)
+	rows, err := p.dbConn.Query("SELECT COUNT(*) FROM orders WHERE reg_date BETWEEN $1 AND $2", util.FormatDate(startDate, "2006-01-02"), util.FormatDate(endDate, "2006-01-02"))
 	if err != nil {
 		log.Printf("error GetCountDateOrders: %v", err)
 		return checkCount(rows), err
@@ -402,7 +472,6 @@ func (p *pgDb) DeleteDepartament(id int64) error {
 	}
 	return err
 }
-
 
 func (p *pgDb) CreateHBKindOfDoc(hbkind model.HBKindOfDoc) error {
 	_, err := p.dbConn.Exec("INSERT INTO hbkind (name) VALUES ($1)", &hbkind.Name)

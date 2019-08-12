@@ -37,6 +37,7 @@ type Page struct {
 	PaginationPages                []util.PaginationPage
 	Next, Previous                 int
 	NextIsActive, PreviousIsActive bool
+	IsAdmin                        bool
 }
 
 var (
@@ -233,6 +234,10 @@ func Logger(h http.Handler, m *model.Model) http.HandlerFunc {
 
 func indexHandler(config Config, m *model.Model) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		type PageIndex struct {
+			Output  []int
+			IsAdmin bool
+		}
 		output := []int{}
 		sms := util.DateStatGenerate()
 		for _, sm := range sms {
@@ -242,17 +247,16 @@ func indexHandler(config Config, m *model.Model) http.HandlerFunc {
 				return
 			}
 			output = append(output, count)
-			//log.Printf("Колличество записей: %v за период: %s %s", count, sm.StartDate.Format("2006-01-02"), sm.EndDate.Format("2006-01-02"))
-			//log.Printf("Длинна массива: %v", len(output))
 		}
-		//log.Printf("Длинна массива: %v", len(output))
 
 		tmpl, err := template.ParseFiles(path.Join("assets/templates", "layout.html"), path.Join("assets/templates", "index.html"))
 		if err != nil {
 			log.Printf("{\"error\":%q}", err.Error())
 			return
 		}
-		if err := tmpl.ExecuteTemplate(w, "layout", output); err != nil {
+		u := context.Get(r, "user")
+		page := PageIndex{Output: output, IsAdmin: u.(model.User).IsAdmin}
+		if err := tmpl.ExecuteTemplate(w, "layout", page); err != nil {
 			log.Println(err.Error())
 			http.Error(w, http.StatusText(500), 500)
 		}
@@ -261,6 +265,7 @@ func indexHandler(config Config, m *model.Model) http.HandlerFunc {
 
 func ListOrdersHandler(config Config, m *model.Model) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		u := context.Get(r, "user")
 		// Передаем функцию в шаблон
 		funcMap := template.FuncMap{
 			// форматируем дату
@@ -268,8 +273,8 @@ func ListOrdersHandler(config Config, m *model.Model) http.HandlerFunc {
 		}
 		// Получим первую и последнюю дату текущего года
 		sm := util.DateYearGenerate()
-		all, err := m.GetCountDateOrders(sm.StartDate, sm.EndDate)
-
+		//all, err := m.GetCountDateOrders(sm.StartDate, sm.EndDate)
+		all, err := m.GetCountDateOrdersByUsername(sm.StartDate, sm.EndDate, u.(model.User).Username)
 		if err != nil {
 			log.Printf("{\"error\":%q}", err.Error())
 			return
@@ -281,7 +286,9 @@ func ListOrdersHandler(config Config, m *model.Model) http.HandlerFunc {
 		}
 		paginationPages := util.Pagination(limit, all, linkLimit, start)
 
-		orders, err := m.GetDateOrders(sm.StartDate, sm.EndDate, limit, start)
+		//orders, err := m.GetDateOrders(sm.StartDate, sm.EndDate, limit, start)
+		orders, err := m.GetDateUserByUsername(sm.StartDate, sm.EndDate, u.(model.User).Username, limit, start)
+
 		if err != nil {
 			log.Printf("{\"error\":%q}", err.Error())
 			return
@@ -298,7 +305,7 @@ func ListOrdersHandler(config Config, m *model.Model) http.HandlerFunc {
 			nextIsActive = true
 		}
 
-		page := Page{Orders: orders, PaginationPages: paginationPages, Next: next, Previous: previous, NextIsActive: nextIsActive, PreviousIsActive: previousIsActive}
+		page := Page{Orders: orders, PaginationPages: paginationPages, Next: next, Previous: previous, NextIsActive: nextIsActive, PreviousIsActive: previousIsActive, IsAdmin: u.(model.User).IsAdmin}
 		tmpl := template.New("orders").Funcs(funcMap)
 		tmpl, err = tmpl.ParseFiles(path.Join("assets/templates", "layout.html"), path.Join("assets/templates", "orders.html"))
 		if err != nil {
@@ -314,8 +321,10 @@ func ListOrdersHandler(config Config, m *model.Model) http.HandlerFunc {
 
 func ListArchiveOrdersHandler(config Config, m *model.Model) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		u := context.Get(r, "user")
 		// Получим первую и последнюю дату текущего года
 		sm := util.DateYearGenerate()
+		//log.Printf("%v %v", sm.StartDate, sm.EndDate)
 		all, err := m.GetCountDateOrders(sm.StartDate, sm.EndDate)
 		if err != nil {
 			log.Printf("{\"error\":%q}", err.Error())
@@ -326,99 +335,70 @@ func ListArchiveOrdersHandler(config Config, m *model.Model) http.HandlerFunc {
 		if id != 0 {
 			start = id
 		}
-		paginationPages := util.Pagination(limit, all, linkLimit, start)
-
 		orders, err := m.GetDateOrders(sm.StartDate, sm.EndDate, limit, start)
 		if err != nil {
 			log.Printf("{\"error\":%q}", err.Error())
 			return
 		}
-
-		next := (start + limit)
-		previous := (start - limit)
-		previousIsActive := false
-		nextIsActive := false
-		if previous < 0 {
-			previousIsActive = true
+		if r.Method == "POST" {
+			order := model.Order{}
+			r.ParseMultipartForm(32 << 20)
+			err := r.ParseForm()
+			if err != nil {
+				log.Println(err)
+			}
+			order.DocType = r.FormValue("DocType")
+			order.KindOfDoc = r.FormValue("KindOfDoc")
+			order.DocLabel = r.FormValue("DocLabel")
+			order.RegNumber = r.FormValue("RegNumber")
+			order.Description = r.FormValue("Description")
+			order.Username = r.FormValue("Username")
+			startDate, err := time.Parse("2006-01-02", r.FormValue("StartDate"))
+			if err != nil {
+				log.Printf("{\"error\":%q}", err.Error())
+				// если ничего не пришло то ставим дату этого года
+				startDate = sm.StartDate
+			}
+			endDate, err := time.Parse("2006-01-02", r.FormValue("EndDate"))
+			if err != nil {
+				log.Printf("{\"error\":%q}", err.Error())
+				// если ничего не пришло то ставим дату этого года
+				endDate = sm.EndDate
+			}
+			orders, err = m.GetSearchOrders(order, startDate, endDate)
+			if err != nil {
+				log.Printf("{\"error\":%q}", err.Error())
+				return
+			}
+			all = 0
 		}
-		if next >= all {
-			nextIsActive = true
-		}
-
-		page := Page{Orders: orders, PaginationPages: paginationPages, Next: next, Previous: previous, NextIsActive: nextIsActive, PreviousIsActive: previousIsActive}
-		// Передаем функцию в шаблон
-		funcMap := template.FuncMap{
-			// форматируем дату
-			"fdate": util.FormatDate,
-		}
-		tmpl := template.New("orders").Funcs(funcMap)
-		tmpl, err = tmpl.ParseFiles(path.Join("assets/templates", "layout.html"), path.Join("assets/templates", "orders_archive.html"))
-		if err != nil {
-			log.Printf("{\"error\":%q}", err.Error())
-			return
-		}
-
-		if err := tmpl.ExecuteTemplate(w, "layout", page); err != nil {
-			log.Println(err.Error())
-			http.Error(w, http.StatusText(500), 500)
-		}
-	}
-}
-
-/*
-func ListSearchOrdersHandler(config Config, m *model.Model) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		if err != nil {
-			log.Println(err)
-		}
-		docType := r.FormValue("DocType")
-		kindOfDoc := r.FormValue("KindOfDoc")
-		docLabel := r.FormValue("DocLabel")
-		startDate, err := time.Parse("2006-01-02", r.FormValue("StartDate"))
-		if err != nil {
-			log.Printf("{\"error\":%q}", err.Error())
-			return
-		}
-		endDate, err := time.Parse("2006-01-02", r.FormValue("EndDate"))
-		if err != nil {
-			log.Printf("{\"error\":%q}", err.Error())
-			return
-		}
-		regNumber := r.FormValue("RegNumber")
-		description := r.FormValue("Description")
-		author := r.FormValue("Author")
-		//order.Current = r.FormValue("Current")
-
-		orders, err := m.GetSearchOrders(docType, kindOfDoc, docLabel, regNumber, description, author, startDate, endDate, limit, start)
-		if err != nil {
-			log.Printf("{\"error\":%q}", err.Error())
-			return
-		}
-		if err != nil {
-			log.Printf("{\"error\":%q}", err.Error())
-			return
-		}
-		vars := mux.Vars(r)
-		id := int(intVar(vars, "id"))
-		if id != 0 {
-			start = id
-		}
-		all := len(orders)
 		paginationPages := util.Pagination(limit, all, linkLimit, start)
-
 		next := (start + limit)
 		previous := (start - limit)
 		previousIsActive := false
 		nextIsActive := false
-		if previous < 0 {
+		if previous <= 0 {
 			previousIsActive = true
 		}
 		if next >= all {
 			nextIsActive = true
 		}
-
-		page := Page{Orders: orders, PaginationPages: paginationPages, Next: next, Previous: previous, NextIsActive: nextIsActive, PreviousIsActive: previousIsActive}
+		hbtype, err := m.GetHBDocType()
+		if err != nil {
+			fmt.Fprintf(w, "err: %s\n", err)
+			return
+		}
+		hbkind, err := m.GetHBKindOfDoc()
+		if err != nil {
+			fmt.Fprintf(w, "err: %s\n", err)
+			return
+		}
+		hblabel, err := m.GetHBDocLabel()
+		if err != nil {
+			fmt.Fprintf(w, "err: %s\n", err)
+			return
+		}
+		page := Page{Orders: orders, HBDocType: hbtype, HBKindOfDoc: hbkind, HBDocLabel: hblabel, PaginationPages: paginationPages, Next: next, Previous: previous, NextIsActive: nextIsActive, PreviousIsActive: previousIsActive, IsAdmin: u.(model.User).IsAdmin}
 		// Передаем функцию в шаблон
 		funcMap := template.FuncMap{
 			// форматируем дату
@@ -437,9 +417,13 @@ func ListSearchOrdersHandler(config Config, m *model.Model) http.HandlerFunc {
 		}
 	}
 }
-*/
+
 func DetailedOrderHandler(config Config, m *model.Model) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		type PageDetailed struct {
+			Order   model.Order
+			IsAdmin bool
+		}
 		var err error
 		vars := mux.Vars(r)
 		id := int64(intVar(vars, "id"))
@@ -463,7 +447,103 @@ func DetailedOrderHandler(config Config, m *model.Model) http.HandlerFunc {
 			log.Printf("{\"error\":%q}", err.Error())
 			return
 		}
-		if err := tmpl.ExecuteTemplate(w, "layout", order); err != nil {
+		u := context.Get(r, "user")
+		page := PageDetailed{Order: order, IsAdmin: u.(model.User).IsAdmin}
+		if err := tmpl.ExecuteTemplate(w, "layout", page); err != nil {
+			log.Println(err.Error())
+			http.Error(w, http.StatusText(500), 500)
+		}
+	}
+}
+
+func CreateOrderHandler(config Config, m *model.Model) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		u := context.Get(r, "user")
+		type PageCreateOrder struct {
+			HBDocType   []model.HBDocType
+			HBKindOfDoc []model.HBKindOfDoc
+			HBDocLabel  []model.HBDocLabel
+			IsAdmin     bool
+		}
+
+		if r.Method == "POST" {
+			order := model.Order{}
+			err := r.ParseForm()
+			if err != nil {
+				log.Println(err)
+			}
+			order.DocType = r.FormValue("DocType")
+			order.KindOfDoc = r.FormValue("KindOfDoc")
+			order.DocLabel = r.FormValue("DocLabel")
+			fmt.Println("RegDate: %v\n", r.FormValue("RegDate"))
+			if RegDate, err := time.Parse("2006-01-02", r.FormValue("RegDate")); err != nil {
+				fmt.Fprintf(w, "err: %s\n", err)
+			} else {
+				order.RegDate = RegDate
+			}
+			order.RegNumber = r.FormValue("RegNumber")
+			order.Description = r.FormValue("Description")
+			order.Username = u.(model.User).Username
+
+			if fileOriginal, handlerOriginal, err := r.FormFile("FileOriginal"); err != nil {
+				log.Println("Ошибка загрузки Оригинала: ", err)
+			} else {
+				if pathfile, err := util.UploadFile(fileOriginal, handlerOriginal); err != nil {
+					log.Println("Ошибка загрузки Оригинала на сервер: ", err)
+					return
+				} else {
+					order.FileOriginal = pathfile
+				}
+
+				defer fileOriginal.Close()
+			}
+
+			if fileCopy, handlerCopy, err := r.FormFile("FileCopy"); err != nil {
+				log.Println("Ошибка загрузки Копии: ", err)
+			} else {
+				if pathfile, err := util.UploadFile(fileCopy, handlerCopy); err != nil {
+					log.Println("Ошибка загрузки Копии на сервер: ", err)
+					return
+				} else {
+					order.FileCopy = pathfile
+				}
+				defer fileCopy.Close()
+			}
+
+			if b := r.FormValue("Current"); b == "on" {
+				order.Current = true
+			} else {
+				order.Current = false
+			}
+			//log.Println(order)
+			if err = m.CreateOrder(order); err != nil {
+				fmt.Fprintf(w, "err: %s\n", err)
+			}
+			http.Redirect(w, r, "/orders", 301)
+		}
+		hbtype, err := m.GetHBDocType()
+		if err != nil {
+			fmt.Fprintf(w, "err: %s\n", err)
+			return
+		}
+		hbkind, err := m.GetHBKindOfDoc()
+		if err != nil {
+			fmt.Fprintf(w, "err: %s\n", err)
+			return
+		}
+		hblabel, err := m.GetHBDocLabel()
+		if err != nil {
+			fmt.Fprintf(w, "err: %s\n", err)
+			return
+		}
+
+		tmpl, err := template.ParseFiles(path.Join("assets/templates", "layout.html"), path.Join("assets/templates", "orders_create.html"))
+		if err != nil {
+			log.Printf("{\"error\":%q}", err.Error())
+			return
+		}
+		pageCreateOrder := PageCreateOrder{HBDocType: hbtype, HBKindOfDoc: hbkind, HBDocLabel: hblabel, IsAdmin: u.(model.User).IsAdmin}
+		if err := tmpl.ExecuteTemplate(w, "layout", pageCreateOrder); err != nil {
 			log.Println(err.Error())
 			http.Error(w, http.StatusText(500), 500)
 		}
@@ -473,10 +553,11 @@ func DetailedOrderHandler(config Config, m *model.Model) http.HandlerFunc {
 func EditOrderHandler(config Config, m *model.Model) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type PageEditOrder struct {
-			Order                          model.Order
-			HBDocType                      []model.HBDocType
-			HBKindOfDoc                    []model.HBKindOfDoc
-			HBDocLabel                     []model.HBDocLabel
+			Order       model.Order
+			HBDocType   []model.HBDocType
+			HBKindOfDoc []model.HBKindOfDoc
+			HBDocLabel  []model.HBDocLabel
+			IsAdmin     bool
 		}
 		var err error
 		vars := mux.Vars(r)
@@ -499,26 +580,48 @@ func EditOrderHandler(config Config, m *model.Model) http.HandlerFunc {
 			order.DocType = r.FormValue("DocType")
 			order.KindOfDoc = r.FormValue("KindOfDoc")
 			order.DocLabel = r.FormValue("DocLabel")
-			order.RegDate, err = time.Parse("2006-01-02", r.FormValue("RegDate"))
-			if err != nil {
+			fmt.Println("RegDate: %v\n", r.FormValue("RegDate"))
+			if RegDate, err := time.Parse("2006-01-02", r.FormValue("RegDate")); err != nil {
 				fmt.Fprintf(w, "err: %s\n", err)
-				return
+			} else {
+				order.RegDate = RegDate
 			}
 			order.RegNumber = r.FormValue("RegNumber")
 			order.Description = r.FormValue("Description")
-			order.Username = r.FormValue("Username")
-			order.FileOriginal = r.FormValue("FileOriginal")
-			order.FileCopy = r.FormValue("FileCopy")
-			b := r.FormValue("Current")
-			if b == "on" {
+			//order.Username = u.(model.User).Username
+
+			if fileOriginal, handlerOriginal, err := r.FormFile("FileOriginal"); err != nil {
+				log.Println("Ошибка загрузки Оригинала: ", err)
+			} else {
+				if pathfile, err := util.UploadFile(fileOriginal, handlerOriginal); err != nil {
+					log.Println("Ошибка загрузки Оригинала на сервер: ", err)
+					return
+				} else {
+					order.FileOriginal = pathfile
+				}
+
+				defer fileOriginal.Close()
+			}
+
+			if fileCopy, handlerCopy, err := r.FormFile("FileCopy"); err != nil {
+				log.Println("Ошибка загрузки Копии: ", err)
+			} else {
+				if pathfile, err := util.UploadFile(fileCopy, handlerCopy); err != nil {
+					log.Println("Ошибка загрузки Копии на сервер: ", err)
+					return
+				} else {
+					order.FileCopy = pathfile
+				}
+				defer fileCopy.Close()
+			}
+
+			if b := r.FormValue("Current"); b == "on" {
 				order.Current = true
 			} else {
 				order.Current = false
 			}
-			log.Println(order)
-			log.Println(r.FormValue("RegDate"))
-			err = m.UpdateOrder(order)
-			if err != nil {
+			//log.Println(order)
+			if err = m.UpdateOrder(order); err != nil {
 				fmt.Fprintf(w, "err: %s\n", err)
 			}
 			http.Redirect(w, r, "/orders", 301)
@@ -549,7 +652,8 @@ func EditOrderHandler(config Config, m *model.Model) http.HandlerFunc {
 			log.Printf("{\"error\":%q}", err.Error())
 			return
 		}
-		pageEditOrder := PageEditOrder{Order: order, HBDocType: hbtype, HBKindOfDoc: hbkind, HBDocLabel: hblabel}
+		u := context.Get(r, "user")
+		pageEditOrder := PageEditOrder{Order: order, HBDocType: hbtype, HBKindOfDoc: hbkind, HBDocLabel: hblabel, IsAdmin: u.(model.User).IsAdmin}
 		if err := tmpl.ExecuteTemplate(w, "layout", pageEditOrder); err != nil {
 			log.Println(err.Error())
 			http.Error(w, http.StatusText(500), 500)
@@ -581,6 +685,10 @@ func DeleteOrderHandler(config Config, m *model.Model) http.HandlerFunc {
 
 func ListUsersHandler(config Config, m *model.Model) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		type PageUsers struct {
+			Users   []model.User
+			IsAdmin bool
+		}
 		users, err := m.GetUsers()
 		if err != nil {
 			log.Printf("err: %+v\n", err.Error())
@@ -597,7 +705,9 @@ func ListUsersHandler(config Config, m *model.Model) http.HandlerFunc {
 			log.Printf("{\"error\":%q}", err.Error())
 			return
 		}
-		if err := tmpl.ExecuteTemplate(w, "layout", users); err != nil {
+		u := context.Get(r, "user")
+		page := PageUsers{Users: users, IsAdmin: u.(model.User).IsAdmin}
+		if err := tmpl.ExecuteTemplate(w, "layout", page); err != nil {
 			log.Println(err.Error())
 			http.Error(w, http.StatusText(500), 500)
 		}
@@ -614,8 +724,9 @@ func intVar(vars map[string]string, k string) int64 {
 func EditUserHandler(config Config, m *model.Model) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type PageEditUser struct {
-			User                          model.User
-			Departaments                  []model.Departament
+			User         model.User
+			Departaments []model.Departament
+			IsAdmin      bool
 		}
 		var err error
 		vars := mux.Vars(r)
@@ -652,7 +763,8 @@ func EditUserHandler(config Config, m *model.Model) http.HandlerFunc {
 			fmt.Fprintf(w, "err: %s\n", err)
 			return
 		}
-		pageEditUser := PageEditUser{User: user, Departaments: departaments}
+		u := context.Get(r, "user")
+		pageEditUser := PageEditUser{User: user, Departaments: departaments, IsAdmin: u.(model.User).IsAdmin}
 		tmpl := template.New("orders").Funcs(funcMap)
 		tmpl, err = tmpl.ParseFiles(path.Join("assets/templates", "layout.html"), path.Join("assets/templates", "users_edit.html"))
 		if err != nil {
@@ -701,12 +813,12 @@ func Start(cfg Config, m *model.Model, listener net.Listener) {
 	router.HandleFunc("/users/edit/{id:[0-9]+}", Use(EditUserHandler(cfg, m), m, RequireLogin, requireAdmin))
 	router.HandleFunc("/users/edit/{id:[0-9]+}/delete", Use(DeleteUserHandler(cfg, m), m, RequireLogin, requireAdmin))
 
-	//router.HandleFunc("/orders", Use(ListOrdersHandler(cfg, m), m, RequireLogin))
+	router.HandleFunc("/orders", Use(ListOrdersHandler(cfg, m), m, RequireLogin))
 	router.HandleFunc("/orders/{id:[0-9]+}", Use(ListOrdersHandler(cfg, m), m, RequireLogin))
 	router.HandleFunc("/orders/order/{id:[0-9]+}", Use(DetailedOrderHandler(cfg, m), m, RequireLogin))
-	//router.HandleFunc("/ordersarc", Use(ListArchiveOrdersHandler(cfg, m), m, RequireLogin))
-	router.HandleFunc("/ordersarc/{id:[0-9]+}", Use(ListArchiveOrdersHandler(cfg, m), m, RequireLogin))
-	//router.HandleFunc("/ordersarcsearch/{id:[0-9]+}", Use(ListSearchOrdersHandler(cfg, m), m, RequireLogin))
+	router.HandleFunc("/orders/archive", Use(ListArchiveOrdersHandler(cfg, m), m, RequireLogin))
+	router.HandleFunc("/orders/archive/{id:[0-9]+}", Use(ListArchiveOrdersHandler(cfg, m), m, RequireLogin))
+	router.HandleFunc("/orders/create", Use(CreateOrderHandler(cfg, m), m, RequireLogin))
 	router.HandleFunc("/orders/edit/{id:[0-9]+}", Use(EditOrderHandler(cfg, m), m, RequireLogin))
 	router.HandleFunc("/orders/edit/{id:[0-9]+}/delete", Use(DeleteOrderHandler(cfg, m), m, RequireLogin, requireAdmin))
 
@@ -718,6 +830,8 @@ func Start(cfg Config, m *model.Model, listener net.Listener) {
 		http.StripPrefix("/js/", http.FileServer(http.Dir("assets/js"))))
 	router.PathPrefix("/templates/").Handler(
 		http.StripPrefix("/templates/", http.FileServer(http.Dir("assets/templates"))))
+	router.PathPrefix("/orders/order/upload/").Handler(
+		http.StripPrefix("/orders/order/upload/", http.FileServer(http.Dir("./upload"))))
 
 	h := Use(router.ServeHTTP, m, Logger, ContextManager)
 	/*

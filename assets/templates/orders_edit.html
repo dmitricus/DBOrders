@@ -1,80 +1,78 @@
 {{define "body"}}
 <h3>Редактирование приказа от {{fdate .Order.RegDate "03-01-2006"}} №{{.Order.RegNumber}}</h3>
-<form action="/orders/edit/{{ .Order.ID }}" method="POST">
-        <div class="form-row">
-                <div class="col-md-2 mb-3">
-                <label for="validationDefault01">Тип документа</label>
-                <select class="custom-select" name="DocType">
-                    {{$docType := .Order.DocType}}
-                    {{ range .HBDocType }}
-                        <option value="{{ .Name }}" {{ if eq $docType .Name }} selected="selected" {{ end }}>{{ .Name }}</option>
-                    {{ end }}
-                </select>
-                </div>
-                <div class="col-md-2 mb-3">
-                <label for="validationDefault02">Вид документа</label>
-                <select class="custom-select" name="KindOfDoc">
-                    {{$kindOfDoc := .Order.KindOfDoc}}
-                    {{ range .HBKindOfDoc }}
-                        <option value="{{ .Name }}" {{ if eq $kindOfDoc .Name }} selected="selected" {{ end }}>{{ .Name }}</option>
-                    {{ end }}
-                </select>
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label for="validationDefaultUsername">Штамп секретности</label>
-                    <select class="custom-select" name="DocLabel">
-                        {{$docLabel := .Order.DocLabel}}
-                        {{ range .HBDocLabel }}
-                            <option value="{{ .Name }}" {{ if eq $docLabel .Name }} selected="selected" {{ end }}>{{ .Name }}</option>
-                        {{ end }}
-                    </select>
-                </div>
+<form action="/orders/edit/{{ .Order.ID }}" method="POST" enctype="multipart/form-data">
+    <div class="form-row">
+        <div class="col-md-2 mb-3">
+            <label for="validationDefault01">Тип документа</label>
+            <select class="custom-select" name="DocType">
+                {{$docType := .Order.DocType}}
+                {{ range .HBDocType }}
+                    <option value="{{ .Name }}" {{ if eq $docType .Name }} selected="selected" {{ end }}>{{ .Name }}</option>
+                {{ end }}
+            </select>
+        </div>
+        <div class="col-md-2 mb-3">
+            <label for="validationDefault02">Вид документа</label>
+            <select class="custom-select" name="KindOfDoc">
+                {{$kindOfDoc := .Order.KindOfDoc}}
+                {{ range .HBKindOfDoc }}
+                    <option value="{{ .Name }}" {{ if eq $kindOfDoc .Name }} selected="selected" {{ end }}>{{ .Name }}</option>
+                {{ end }}
+            </select>
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="validationDefaultUsername">Штамп секретности</label>
+            <select class="custom-select" name="DocLabel">
+                {{$docLabel := .Order.DocLabel}}
+                {{ range .HBDocLabel }}
+                    <option value="{{ .Name }}" {{ if eq $docLabel .Name }} selected="selected" {{ end }}>{{ .Name }}</option>
+                {{ end }}
+            </select>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="col-md-2 mb-3">
+            <label for="validationDefault03">Дата регистрации</label>
+            <input type="date" class="form-control" id="validationDefault03" name="RegDate" value='{{fdate .Order.RegDate "2006-01-03"}}' placeholder="Дата">
+        </div>
+        <div class="col-md-2 mb-3">
+            <label for="validationDefault03">Регистрационный номер</label>
+            <input type="text" class="form-control" id="validationDefault03" name="RegNumber" value="{{.Order.RegNumber}}" placeholder="Номер">
+        </div>
+        <div class="col-md-3 mb-3">
+            <label for="validationDefault03">Описание</label>
+            <input type="text" class="form-control" id="validationDefault03" name="Description" value="{{.Order.Description}}" placeholder="Описание">
+        </div>
+    </div><!--
+    <div class="form-row">
+        <div class="col-md-2 mb-3">
+            <label for="validationDefault03">Автор</label>
+            <input type="text" class="form-control" id="validationDefault03" name="Username" value="{{.Order.Username}}" placeholder="Автор">
+        </div>
+    </div>-->
+    <div class="form-row">
+        <div class="col-md-7 mb-3">
+            <input type="file" class="custom-file-input" id="customFileLang" name="FileOriginal" lang="es" accept="application/msword,application/rtf" value="{{.Order.FileOriginal}}" >
+            <label class="custom-file-label" for="customFileLang">Оригинал</label>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="col-md-7 mb-3">
+            <input type="file" class="custom-file-input" id="customFileLang" name="FileCopy" lang="es" accept="application/pdf" value="{{.Order.FileCopy}}" >
+            <label class="custom-file-label" for="customFileLang">Копия</label>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="col-sm-2">Активность приказа</div>
+        <div class="col-sm-10">
+            <div class="custom-control custom-switch">
+                <input type="checkbox" class="custom-control-input" id="customSwitch1" name="Current" {{if .Order.Current}} checked {{end}}>
+                <label class="custom-control-label" for="customSwitch1">Активность приказа</label>
             </div>
-            <div class="form-row">
-                <div class="col-md-2 mb-3">
-                    <label for="validationDefault03">Дата регистрации</label>
-                    <input type="date" class="form-control" id="validationDefault03" name="RegDate" value='{{fdate .Order.RegDate "2006-01-03"}}' placeholder="Дата">
-                </div>
-                <div class="col-md-2 mb-3">
-                    <label for="validationDefault03">Регистрационный номер</label>
-                    <input type="text" class="form-control" id="validationDefault03" name="RegNumber" value="{{.Order.RegNumber}}" placeholder="Номер">
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label for="validationDefault03">Описание</label>
-                    <input type="text" class="form-control" id="validationDefault03" name="Description" value="{{.Order.Description}}" placeholder="Описание">
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="col-md-2 mb-3">
-                    <label for="validationDefault03">Автор</label>
-                    <input type="text" class="form-control" id="validationDefault03" name="Username" value="{{.Order.Username}}" placeholder="Автор">
-                </div>
-            </div>
-            
-            <div class="form-row">
-                <div class="col-md-3 mb-3">
-                    <input type="file" class="custom-file-input" id="customFileLang" name="FileOriginal" lang="es" value="{{.Order.FileOriginal}}" >
-                    <label class="custom-file-label" for="customFileLang">Оригинал</label>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="col-md-3 mb-3">
-                    <input type="file" class="custom-file-input" id="customFileLang" name="FileCopy" lang="es" value="{{.Order.FileCopy}}" >
-                    <label class="custom-file-label" for="customFileLang">Копия</label>
-                </div>
-            </div>
-            <div class="form-group row">
-                <div class="col-sm-2">Активность приказа</div>
-                <div class="col-sm-10">
-                    <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="gridCheck1" name="Current" {{if .Order.Current}} checked {{end}}>
-                    <label class="form-check-label" for="gridCheck1">
-                        Активен
-                    </label>
-                    </div>
-                </div>
-            </div>
-            <div class="form-row"><button class="btn btn-primary" type="submit">Отправить</button></div>
-                
-            </form>
+
+        </div>
+    </div>
+    <div class="form-row"><button class="btn btn-primary" type="submit">Отправить</button></div>
+</form>
+    
 {{end}}

@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"reflect"
+	"time"
 )
 
 /*
@@ -132,6 +134,21 @@ func pagination(start int) {
 	}
 }
 
+// Случайное значение даты
+func RanDate() time.Time {
+	min := time.Date(2019, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
+	max := time.Date(2021, 12, 0, 0, 0, 0, 0, time.UTC).Unix()
+	delta := max - min
+
+	sec := rand.Int63n(delta) + min
+	return time.Unix(sec, 0)
+}
+
+// Форматирование времени
+func FormatDate(t time.Time, format string) string {
+	return t.Format(format) // Аналогично: YYYY-MM-DD
+}
+
 func main() {
 	/*
 		for i := 1; i < 50; i++ {
@@ -145,5 +162,7 @@ func main() {
 		}
 	*/
 	// посылаем текущее смещение бд
-	pagination(0)
+	//pagination(0)
+	fmt.Println(RanDate())
+	fmt.Println(FormatDate(RanDate(), "03-01-2006"))
 }

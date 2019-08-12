@@ -25,7 +25,7 @@ func processFlags() *Config {
 	cfg := &Config{}
 
 	flag.StringVar(&cfg.ListenSpec, "listen", "localhost:3000", "HTTP listen spec")
-	flag.StringVar(&cfg.Db.ConnectString, "db-connect", "host=localhost port=5432 user=postgres password=31yu*#km dbname=gowebapp sslmode=disable", "DB Connect String")
+	flag.StringVar(&cfg.Db.ConnectString, "db-connect", "host=localhost port=5433 user=postgres password=31yu*#km dbname=gowebapp sslmode=disable", "DB Connect String")
 
 	flag.Parse()
 	return cfg
@@ -199,7 +199,6 @@ func generateHBDocLabel(m *model.Model) {
 	}
 }
 
-
 func main() {
 	cfg := processFlags()
 	m, err := Run(cfg)
@@ -208,9 +207,9 @@ func main() {
 		return
 	}
 	//generateDepartaments(m)
-	//generateHBDocType(m)
-	//generateHBKindOfDoc(m)
-	//generateHBDocLabel(m)
+	generateHBDocType(m)
+	generateHBKindOfDoc(m)
+	generateHBDocLabel(m)
 	//adduser(m, "admin", "12345", "admin@uszn.avo.ru", "Информационно-компьютерный отдел", true)
 	//adduser(m, "dmitrieva_av", "12345", "dmitrieva@uszn.avo.ru", "Отдел организации назначения детских пособий и социальных выплат", false)
 	generateOrders(m, "dmitrieva_av")

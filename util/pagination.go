@@ -81,22 +81,25 @@ func Pagination(limit, all, linkLimit, start int) []PaginationPage {
 
 	paginationPages := []PaginationPage{}
 	// Собственно выводим ссылки из нужного чанка
-	for pageNum, ofset := range allPages[needChunk] {
-		paginationPage := PaginationPage{}
+	if len(allPages) > 0 {
+		for pageNum, ofset := range allPages[needChunk] {
+			paginationPage := PaginationPage{}
 
-		// Делаем текущую страницу не активной (т.е. не ссылкой):
-		if ofset == start {
+			// Делаем текущую страницу не активной (т.е. не ссылкой):
+			if ofset == start {
+				paginationPage.PageNum = ((pageNum + 1) + (linkLimit * needChunk))
+				paginationPage.Ofset = ofset
+				paginationPage.Active = "disabled"
+				paginationPages = append(paginationPages, paginationPage)
+				continue
+			}
 			paginationPage.PageNum = ((pageNum + 1) + (linkLimit * needChunk))
 			paginationPage.Ofset = ofset
-			paginationPage.Active = "disabled"
+			paginationPage.Active = ""
 			paginationPages = append(paginationPages, paginationPage)
-			continue
-		}
-		paginationPage.PageNum = ((pageNum + 1) + (linkLimit * needChunk))
-		paginationPage.Ofset = ofset
-		paginationPage.Active = ""
-		paginationPages = append(paginationPages, paginationPage)
 
+		}
+		return paginationPages
 	}
 	return paginationPages
 }

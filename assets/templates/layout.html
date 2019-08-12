@@ -10,7 +10,7 @@
 		<link rel="icon" href="img/favicon.ico">
 		<!-- Bootstrap CSS -->
 		<!-- Bootstrap core CSS -->
-		<link href="https://getbootstrap.com/docs/4.0/dist/css/bootstrap.min.css" rel="stylesheet">
+		<link href="https://getbootstrap.com/docs/4.3/dist/css/bootstrap.min.css" rel="stylesheet">
 		<!-- Custom styles for this template -->
 		<link href="https://getbootstrap.com/docs/4.0/examples/dashboard/dashboard.css" rel="stylesheet">
 		<title>БД Приказов</title>
@@ -44,17 +44,17 @@
 				  </a>
 				</li>
 				<li class="nav-item">
-					<a class="nav-link" href="/ordersarc/0">
+					<a class="nav-link" href="/orders/archive/0">
 					  <span data-feather="file"></span>
 					  Архивы приказов
 					</a>
-				  </li>
+				  </li> {{ if .IsAdmin}}
 				<li class="nav-item">
 				  <a class="nav-link" href="/users">
 					<span data-feather="users"></span>
 					Пользователи
 				  </a>
-				</li>
+				</li>{{end}}
 				<!-- <li class="nav-item">
 				  <a class="nav-link" href="#">
 					<span data-feather="bar-chart-2"></span>

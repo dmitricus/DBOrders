@@ -1,65 +1,67 @@
 {{define "body"}}
-<h3>Приказ от {{fdate .RegDate "03-01-2006"}} №{{.RegNumber}}</h3>
+<h3>Приказ от {{fdate .Order.RegDate "02-01-2006"}} №{{.Order.RegNumber}}</h3>
 <form>
     <div class="form-group row">
-        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Тип документа</h5></label>
+        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Тип документа:</h5></label>
         <div class="col-sm-10">
-            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.DocType}}">
+            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.Order.DocType}}">
         </div>
     </div>
     <div class="form-group row">
-        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Вид документа</h5></label>
+        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Вид документа:</h5></label>
         <div class="col-sm-10">
-            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.KindOfDoc}}">
+            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.Order.KindOfDoc}}">
         </div>
     </div>
     <div class="form-group row">
-        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Штамп секретности</h5></label>
+        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Штамп секретности:</h5></label>
         <div class="col-sm-10">
-            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.DocLabel}}">
+            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.Order.DocLabel}}">
         </div>
     </div>
     <div class="form-group row">
-        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Дата регистрации</h5></label>
+        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Дата регистрации:</h5></label>
         <div class="col-sm-10">
-            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.RegDate}}">
+            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{fdate .Order.RegDate "02-01-2006"}}">
         </div>
     </div>
     <div class="form-group row">
-        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Регистрационный номер</h5></label>
+        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Регистрационный номер:</h5></label>
         <div class="col-sm-10">
-            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.RegNumber}}">
+            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.Order.RegNumber}}">
         </div>
     </div>
     <div class="form-group row">
-        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Описание</h5></label>
+        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Описание:</h5></label>
         <div class="col-sm-10">
-            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.Description}}">
+            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.Order.Description}}">
         </div>
     </div>
     <div class="form-group row">
-        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Автор</h5></label>
+        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Автор:</h5></label>
         <div class="col-sm-10">
-            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.Username}}">
+            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.Order.Username}}">
         </div>
     </div>
     <div class="form-group row">
-        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Оригинал</h5></label>
+        <label class="col-sm-2 col-form-label"><h5>Оригинал:</h5></label>
         <div class="col-sm-10">
-            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.FileOriginal}}">
+            <a href="./upload/2019-08-10/encoded.txt" class="badge badge-light"><img src="../../img/Word-icon.png" height="50" alt=""></a>
+            <!--<a href="{{.Order.FileOriginal}}" class="badge badge-primary">{{.Order.FileOriginal}}</a>-->
         </div>
     </div>
     <div class="form-group row">
-        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Копия</h5></label>
+        <label class="col-sm-2 col-form-label"><h5>Копия:</h5></label>
         <div class="col-sm-10">
-            <input type="text" readonly class="form-control-plaintext" id="staticEmail" value="{{.FileCopy}}">
+            <a href="./upload/2019-08-10/encoded.txt" class="badge badge-light"><img src="../../img/pdf.png" height="50" alt=""></a>
+            <!--<a href="{{.Order.FileCopy}}" class="badge badge-primary"><img src="../../img/pdf.png" height="50" alt=""></a>-->
         </div>
     </div>
     <div class="form-group row">
-        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Флаг действия</h5></label>
+        <label for="staticEmail" class="col-sm-2 col-form-label"><h5>Флаг действия:</h5></label>
         <div class="col-sm-10">
             <input type="text" readonly class="form-control-plaintext" id="staticEmail"
-                value="{{if .Current}} Действующий {{else}} Утратил силу {{end}}">
+                value="{{if .Order.Current}} Действующий {{else}} Утратил силу {{end}}">
         </div>
     </div>
 </form>

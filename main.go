@@ -13,7 +13,7 @@ var assetsPath string
 func processFlags() *daemon.Config {
 	cfg := &daemon.Config{}
 
-	flag.StringVar(&cfg.ListenSpec, "listen", "localhost:3000", "HTTP listen spec")
+	flag.StringVar(&cfg.ListenSpec, "listen", "192.168.10.80:3000", "HTTP listen spec")
 	flag.StringVar(&cfg.Db.ConnectString, "db-connect", "host=localhost port=5432 user=postgres password=31yu*#km dbname=gowebapp sslmode=disable", "DB Connect String")
 	flag.StringVar(&assetsPath, "assets-path", "assets", "Path to assets dir")
 

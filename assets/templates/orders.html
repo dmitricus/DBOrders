@@ -1,6 +1,7 @@
 {{define "body"}}
 <h5>Нормативные акты ДСЗН</h5>
 <!-- <h5><div><strong>Количество приказов:</strong> {{ .Orders | len }} </div></h5> -->
+<div class="form-row"><a href="/orders/create" class="btn btn-primary" type="submit">Добавит новый приказ</a></div>
 <div class="table-responsive">
     <table class="table table-striped table-sm">
         <thead>
@@ -22,7 +23,7 @@
             <td scope="row">{{.DocType}}</td>
             <td scope="row">{{.KindOfDoc}}</td>
             <td scope="row">{{.DocLabel}}</td>
-            <td scope="row">{{fdate .RegDate "03-01-2006"}}</td>
+            <td scope="row">{{fdate .RegDate "02-01-2006"}}</td>
             <td scope="row">{{.RegNumber}}</td>
             <td scope="row">{{.Description}}</td>
             <!--<td scope="row">{{.FileOriginal}}</td>
