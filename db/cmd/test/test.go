@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"math"
 	"math/rand"
@@ -149,6 +150,16 @@ func FormatDate(t time.Time, format string) string {
 	return t.Format(format) // Аналогично: YYYY-MM-DD
 }
 
+func ReplicatorParenthesis(number int) string {
+	var buffer bytes.Buffer
+	if number > 0 && number <= 5 {
+		for n := 1; n <= number; n++ {
+			buffer.WriteString("(")
+		}
+	}
+	return buffer.String()
+}
+
 func main() {
 	/*
 		for i := 1; i < 50; i++ {
@@ -163,6 +174,8 @@ func main() {
 	*/
 	// посылаем текущее смещение бд
 	//pagination(0)
-	fmt.Println(RanDate())
-	fmt.Println(FormatDate(RanDate(), "03-01-2006"))
+	//fmt.Println(RanDate())
+	//fmt.Println(FormatDate(RanDate(), "03-01-2006"))
+
+	fmt.Printf("%s", ReplicatorParenthesis(5))
 }

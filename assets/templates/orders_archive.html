@@ -1,10 +1,65 @@
 {{define "body"}}
+<script>
+$(document).ready(function() {
+  //$('.custom-select').select2();
+    $(".js-data-json-ajax").select2({
+        minimumInputLength: 3, // минимальная длинна ввода, после которой можно отправлять запрос на сервер
+        allowClear: true,
+        placeholder: "---",
+        ajax: {
+            url: "/select2", // адрес бэкэн-обработчика (url)
+            //delay: 250,
+            type: "post",
+            contentType: 'application/json; charset=utf-8',
+            dataType: "json",
+            cache: true,
+            // что будем отправлять на сервер в запросе
+            /*data: function (params) {
+                var query = {
+                    q: params.term
+                };
+                console.log(query);
+                if (params.term == "*") query.items = [];
+                return { json: JSON.stringify( query ) }
+                
+            },*/
+             data: function (params) {
+                //console.log(params);
+                return JSON.stringify(params)
+                
+            },
+                /* обрабатываем то, что пришло с сервера 
+                * (напр. просто берём подмассив) */
+            processResults: function (data, page) {
+                //console.log(data);
+                return {
+                    results:
+                        Object.keys(data).map(function(key) {
+                            //console.log(data[key].Name);
+                            return {
+                                id : data[key].Name,
+                                text : data[key].Name
+                            };
+                        }),
+                    pagination: { more: false }
+                };
+            }
+            /*,
+            error: function(){
+                alert("Ошибка");
+            }*/
+        },
+        escapeMarkup: function (markup) { return markup; }
+    });
+});
+</script>
+<p id="response"></p>
 <h5>Архив нормативных актов ДСЗН</h5>
 <form action="/orders/archive/0" method="POST">
     <div class="form-row">
         <div class="col-md-2 mb-3">
             <label for="validationDefault01">Тип документа</label>
-            <select class="custom-select" name="DocType">
+            <select id="e6" class="custom-select js-data-json-ajax" name="DocType">
                     <option selected></option>
                 {{ range .HBDocType }}
                     <option value="{{ .Name }}">{{ .Name }}</option>
@@ -89,4 +144,7 @@
         </ul>
     </nav>
 </div>
+<p id="response"></p>
+
+
 {{end}}

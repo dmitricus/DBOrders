@@ -10,6 +10,7 @@ import (
 	"path"
 
 	"encoding/base64"
+	"encoding/json"
 	"strconv"
 	"time"
 
@@ -19,9 +20,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
+
 	//"github.com/flosch/pongo2"
 	//"github.com/gorilla/securecookie"
-	//"github.com/kabukky/httpscerts"
+	"github.com/kabukky/httpscerts"
 )
 
 // Config is ...
@@ -227,7 +229,7 @@ func loadTmpl(path string, data interface{}) (string, error) {
 
 func Logger(h http.Handler, m *model.Model) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s", r.URL)
+		//log.Printf("%s", r.URL)
 		h.ServeHTTP(w, r)
 	})
 }
@@ -371,6 +373,7 @@ func ListArchiveOrdersHandler(config Config, m *model.Model) http.HandlerFunc {
 				return
 			}
 			all = 0
+			log.Println(order)
 		}
 		paginationPages := util.Pagination(limit, all, linkLimit, start)
 		next := (start + limit)
@@ -468,6 +471,7 @@ func CreateOrderHandler(config Config, m *model.Model) http.HandlerFunc {
 
 		if r.Method == "POST" {
 			order := model.Order{}
+			r.ParseMultipartForm(32 << 20)
 			err := r.ParseForm()
 			if err != nil {
 				log.Println(err)
@@ -475,9 +479,8 @@ func CreateOrderHandler(config Config, m *model.Model) http.HandlerFunc {
 			order.DocType = r.FormValue("DocType")
 			order.KindOfDoc = r.FormValue("KindOfDoc")
 			order.DocLabel = r.FormValue("DocLabel")
-			fmt.Println("RegDate: %v\n", r.FormValue("RegDate"))
 			if RegDate, err := time.Parse("2006-01-02", r.FormValue("RegDate")); err != nil {
-				fmt.Fprintf(w, "err: %s\n", err)
+				log.Println("err: %s\n", err)
 			} else {
 				order.RegDate = RegDate
 			}
@@ -515,7 +518,7 @@ func CreateOrderHandler(config Config, m *model.Model) http.HandlerFunc {
 			} else {
 				order.Current = false
 			}
-			//log.Println(order)
+			log.Println(order)
 			if err = m.CreateOrder(order); err != nil {
 				fmt.Fprintf(w, "err: %s\n", err)
 			}
@@ -577,10 +580,10 @@ func EditOrderHandler(config Config, m *model.Model) http.HandlerFunc {
 			if err != nil {
 				log.Println(err)
 			}
-			order.DocType = r.FormValue("DocType")
-			order.KindOfDoc = r.FormValue("KindOfDoc")
-			order.DocLabel = r.FormValue("DocLabel")
-			fmt.Println("RegDate: %v\n", r.FormValue("RegDate"))
+			order.DocType = r.FormValue("docType")
+			order.KindOfDoc = r.FormValue("kindOfDoc")
+			order.DocLabel = r.FormValue("docLabel")
+			//fmt.Println("RegDate: %v\n", r.FormValue("RegDate"))
 			if RegDate, err := time.Parse("2006-01-02", r.FormValue("RegDate")); err != nil {
 				fmt.Fprintf(w, "err: %s\n", err)
 			} else {
@@ -801,6 +804,35 @@ func DeleteUserHandler(config Config, m *model.Model) http.HandlerFunc {
 	}
 }
 
+func Select2Handler(config Config, m *model.Model) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		decoder := json.NewDecoder(r.Body)
+		query := struct {
+			Term      string `json:"term"`
+			TypeQuery string `json:"_type"`
+		}{}
+
+		if err := decoder.Decode(&query); err != nil {
+			log.Println("ERROR: " + err.Error())
+			return
+		}
+		hbtype, err := m.Get2HBDocType(query.Term)
+		if err != nil {
+			fmt.Fprintf(w, "err: %s\n", err)
+			return
+		}
+		//var data = map[int]string{1: "приказ", 2: "распоряжение", 3: "постановление"}
+		// create json response from struct
+		a, err := json.Marshal(hbtype)
+		if err != nil {
+			log.Println("ERROR: " + err.Error())
+		}
+
+		w.Write(a)
+	}
+}
+
 // Start is ...
 func Start(cfg Config, m *model.Model, listener net.Listener) {
 	router := mux.NewRouter()
@@ -822,6 +854,8 @@ func Start(cfg Config, m *model.Model, listener net.Listener) {
 	router.HandleFunc("/orders/edit/{id:[0-9]+}", Use(EditOrderHandler(cfg, m), m, RequireLogin))
 	router.HandleFunc("/orders/edit/{id:[0-9]+}/delete", Use(DeleteOrderHandler(cfg, m), m, RequireLogin, requireAdmin))
 
+	router.HandleFunc("/select2", Use(Select2Handler(cfg, m), m, RequireLogin))
+
 	router.PathPrefix("/css/").Handler(
 		http.StripPrefix("/css/", http.FileServer(http.Dir("assets/css"))))
 	router.PathPrefix("/img/").Handler(
@@ -834,17 +868,19 @@ func Start(cfg Config, m *model.Model, listener net.Listener) {
 		http.StripPrefix("/orders/order/upload/", http.FileServer(http.Dir("./upload"))))
 
 	h := Use(router.ServeHTTP, m, Logger, ContextManager)
-	/*
-		// Проверяем, доступен ли cert файл.
-		err := httpscerts.Check("cert.pem", "key.pem")
-		// Если он недоступен, то генерируем новый.
+
+	// Проверяем, доступен ли cert файл.
+	err := httpscerts.Check("cert.pem", "key.pem")
+	// Если он недоступен, то генерируем новый.
+	if err != nil {
+		err = httpscerts.Generate("cert.pem", "key.pem", "127.0.0.1:3000")
+		// http.Serve(autocert.NewListener("example.com"), nil)
 		if err != nil {
-			err = httpscerts.Generate("cert.pem", "key.pem", "127.0.0.1:3000")
-			if err != nil {
-				log.Fatal("Ошибка: Не можем сгенерировать https сертификат.")
-			}
+			log.Fatal("Ошибка: Не можем сгенерировать https сертификат.")
 		}
-		go http.ListenAndServeTLS(listener, "cert.pem", "key.pem", h)
-	*/
-	go http.Serve(listener, h)
+	}
+	// func ServeTLS(l net.Listener, handler Handler, certFile, keyFile string) error
+	go http.ServeTLS(listener, h, "cert.pem", "key.pem")
+
+	//go http.Serve(listener, h)
 }

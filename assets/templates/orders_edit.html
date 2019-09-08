@@ -33,32 +33,32 @@
     <div class="form-row">
         <div class="col-md-2 mb-3">
             <label for="validationDefault03">Дата регистрации</label>
-            <input type="date" class="form-control" id="validationDefault03" name="RegDate" value='{{fdate .Order.RegDate "2006-01-03"}}' placeholder="Дата">
+            <input type="date" class="form-control" name="RegDate" value='{{fdate .Order.RegDate "2006-01-03"}}' placeholder="Дата">
         </div>
         <div class="col-md-2 mb-3">
             <label for="validationDefault03">Регистрационный номер</label>
-            <input type="text" class="form-control" id="validationDefault03" name="RegNumber" value="{{.Order.RegNumber}}" placeholder="Номер">
+            <input type="text" class="form-control" name="RegNumber" value="{{.Order.RegNumber}}" placeholder="Номер">
         </div>
         <div class="col-md-3 mb-3">
             <label for="validationDefault03">Описание</label>
-            <input type="text" class="form-control" id="validationDefault03" name="Description" value="{{.Order.Description}}" placeholder="Описание">
+            <input type="text" class="form-control" name="Description" value="{{.Order.Description}}" placeholder="Описание">
         </div>
     </div><!--
     <div class="form-row">
         <div class="col-md-2 mb-3">
             <label for="validationDefault03">Автор</label>
-            <input type="text" class="form-control" id="validationDefault03" name="Username" value="{{.Order.Username}}" placeholder="Автор">
+            <input type="text" class="form-control" name="Username" value="{{.Order.Username}}" placeholder="Автор">
         </div>
     </div>-->
     <div class="form-row">
         <div class="col-md-7 mb-3">
-            <input type="file" class="custom-file-input" id="customFileLang" name="FileOriginal" lang="es" accept="application/msword,application/rtf" value="{{.Order.FileOriginal}}" >
+            <input type="file" class="custom-file-input" name="FileOriginal" lang="es" accept="application/msword,application/rtf" value="{{.Order.FileOriginal}}" >
             <label class="custom-file-label" for="customFileLang">Оригинал</label>
         </div>
     </div>
     <div class="form-row">
         <div class="col-md-7 mb-3">
-            <input type="file" class="custom-file-input" id="customFileLang" name="FileCopy" lang="es" accept="application/pdf" value="{{.Order.FileCopy}}" >
+            <input type="file" class="custom-file-input" name="FileCopy" lang="es" accept="application/pdf" value="{{.Order.FileCopy}}" >
             <label class="custom-file-label" for="customFileLang">Копия</label>
         </div>
     </div>
@@ -66,7 +66,7 @@
         <div class="col-sm-2">Активность приказа</div>
         <div class="col-sm-10">
             <div class="custom-control custom-switch">
-                <input type="checkbox" class="custom-control-input" id="customSwitch1" name="Current" {{if .Order.Current}} checked {{end}}>
+                <input type="checkbox" class="custom-control-input" name="Current" {{if .Order.Current}} checked {{end}}>
                 <label class="custom-control-label" for="customSwitch1">Активность приказа</label>
             </div>
 

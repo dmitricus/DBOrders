@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"../model"
@@ -357,45 +358,49 @@ func (p *pgDb) GetCountDateOrdersByUsername(startDate, endDate time.Time, userna
 }
 
 // возвращаем количество приказов в промежутки дат
+// Идея: Формирование запроса из кусков в зависимости от того что приходит в функицю
 func (p *pgDb) GetSearchOrders(order model.Order, startDate, endDate time.Time) ([]model.Order, error) {
-	rows, err := p.dbConn.Query(`WITH RECURSIVE r AS (SELECT id, 
-	(SELECT name FROM hbtype WHERE hbtype.id = orders.doc_type_id), 
-	(SELECT name FROM hbkind WHERE hbkind.id = orders.kind_of_doc_id), 
-	(SELECT name FROM hblabel WHERE hblabel.id = orders.doc_label_id), 
-	reg_date, reg_number, description,
-	(SELECT username FROM users WHERE orders.user_id = users.id),
-	file_original, file_copy, current FROM orders 
-	WHERE reg_date >= $1 AND reg_date <= $2
-	UNION SELECT id, 
-	(SELECT name FROM hbtype WHERE hbtype.id = orders.doc_type_id), 
-	(SELECT name FROM hbkind WHERE hbkind.id = orders.kind_of_doc_id), 
-	(SELECT name FROM hblabel WHERE hblabel.id = orders.doc_label_id), 
-	reg_date, reg_number, description,
-	(SELECT username FROM users WHERE orders.user_id = users.id),
-	file_original, file_copy, current FROM orders 
-	WHERE
-	to_tsvector((SELECT name FROM hbtype WHERE hbtype.id = orders.doc_type_id)) || 
-	to_tsvector((SELECT name FROM hbkind WHERE hbkind.id = orders.kind_of_doc_id)) || 
-	to_tsvector((SELECT name FROM hblabel WHERE hblabel.id = orders.doc_label_id)) || 
-	to_tsvector(reg_number) || 
-	to_tsvector(description) || 
-	to_tsvector((SELECT username FROM users WHERE orders.user_id = users.id)) 
-	@@ plainto_tsquery($3) ORDER BY reg_date DESC)
-	SELECT * FROM r`, util.FormatDate(startDate, "2006-01-02"), util.FormatDate(endDate, "2006-01-02"),
-		fmt.Sprintf("%q %s %s %v %s %s", order.DocType, order.KindOfDoc, order.DocLabel, order.RegNumber, order.Description, order.Username))
+	var sqlQiery string
 
+	sqlQierySelect := `SELECT id, (SELECT name FROM hbtype WHERE hbtype.id = orders.doc_type_id), (SELECT name FROM hbkind WHERE hbkind.id = orders.kind_of_doc_id), (SELECT name FROM hblabel WHERE hblabel.id = orders.doc_label_id), 
+	reg_date, reg_number, description, (SELECT username FROM users WHERE orders.user_id = users.id), file_original, file_copy, current FROM orders`
+
+	sqlQieryRegDate := fmt.Sprintf("%s %s", sqlQierySelect, "WHERE reg_date >= $1 AND reg_date <= $2")
+
+	elements := make(map[string]string)
+	elements[fmt.Sprintf("%s %s %s", " INTERSECT", sqlQierySelect, "WHERE doc_type_id = (SELECT id FROM hbtype WHERE hbtype.name =")] = order.DocType
+	elements[fmt.Sprintf("%s %s %s", " INTERSECT", sqlQierySelect, "WHERE kind_of_doc_id = (SELECT id FROM hbkind WHERE hbkind.name =")] = order.KindOfDoc
+	elements[fmt.Sprintf("%s %s %s", " INTERSECT", sqlQierySelect, "WHERE doc_label_id = (SELECT id FROM hblabel WHERE hblabel.name =")] = order.DocLabel
+	elements[fmt.Sprintf("%s %s %s", " INTERSECT", sqlQierySelect, "WHERE (reg_number =")] = order.RegNumber
+	elements[fmt.Sprintf("%s %s %s", " INTERSECT", sqlQierySelect, "WHERE (description =")] = order.Description
+	elements[fmt.Sprintf("%s %s %s", " INTERSECT", sqlQierySelect, "WHERE user_id = (SELECT id FROM users WHERE users.username =")] = order.Username
+
+	var orderParams []string
+	var orderValues []interface{}
+
+	orderValues = append(orderValues, util.FormatDate(startDate, "2006-01-02"))
+	orderValues = append(orderValues, util.FormatDate(endDate, "2006-01-02"))
+	i := 3
+	for orderParam, value := range elements {
+		if value != "" {
+			orderParams = append(orderParams, fmt.Sprintf("%s $%v)", orderParam, i))
+			orderValues = append(orderValues, value)
+			i++
+		}
+	}
 	orders := []model.Order{}
+	sqlQiery = fmt.Sprintf("%s %s %s", sqlQieryRegDate, strings.Join(orderParams[:], " "), "ORDER BY reg_date DESC")
+	rows, err := p.dbConn.Query(fmt.Sprintf("%s", sqlQiery), orderValues...)
 	if err != nil {
 		log.Printf("error GetSearchOrders: %v", err)
 		return orders, err
 	}
-
 	for rows.Next() {
 		order := model.Order{}
 		err := rows.Scan(&order.ID, &order.DocType, &order.KindOfDoc, &order.DocLabel, &order.RegDate, &order.RegNumber,
 			&order.Description, &order.Username, &order.FileOriginal, &order.FileCopy, &order.Current)
 		if err != nil {
-			log.Printf("error GetDateOrders: %v", err)
+			log.Printf("error GetSearchOrders: %v", err)
 			continue
 		}
 		orders = append(orders, order)
@@ -484,7 +489,7 @@ func (p *pgDb) CreateHBKindOfDoc(hbkind model.HBKindOfDoc) error {
 
 func (p *pgDb) GetHBKindOfDoc() ([]model.HBKindOfDoc, error) {
 	hbkinds := []model.HBKindOfDoc{}
-	rows, err := p.dbConn.Query(`SELECT name FROM hbkind`)
+	rows, err := p.dbConn.Query(`SELECT id, name FROM hbkind`)
 	if err != nil {
 		log.Printf("error GetBKindOfDoc: %v", err)
 		return nil, err
@@ -493,7 +498,7 @@ func (p *pgDb) GetHBKindOfDoc() ([]model.HBKindOfDoc, error) {
 
 	for rows.Next() {
 		hbkind := model.HBKindOfDoc{}
-		err := rows.Scan(&hbkind.Name)
+		err := rows.Scan(&hbkind.ID, &hbkind.Name)
 		if err != nil {
 			log.Printf("error GetBKindOfDoc: %v", err)
 			continue
@@ -514,7 +519,7 @@ func (p *pgDb) CreateHBDocLabel(hblabel model.HBDocLabel) error {
 
 func (p *pgDb) GetHBDocLabel() ([]model.HBDocLabel, error) {
 	hblabels := []model.HBDocLabel{}
-	rows, err := p.dbConn.Query(`SELECT name FROM hblabel`)
+	rows, err := p.dbConn.Query(`SELECT id, name FROM hblabel`)
 	if err != nil {
 		log.Printf("error GetHBDocLabel: %v", err)
 		return nil, err
@@ -523,7 +528,7 @@ func (p *pgDb) GetHBDocLabel() ([]model.HBDocLabel, error) {
 
 	for rows.Next() {
 		hblabel := model.HBDocLabel{}
-		err := rows.Scan(&hblabel.Name)
+		err := rows.Scan(&hblabel.ID, &hblabel.Name)
 		if err != nil {
 			log.Printf("error GetHBDocLabel: %v", err)
 			continue
@@ -544,7 +549,7 @@ func (p *pgDb) CreateHBDocType(hbtype model.HBDocType) error {
 
 func (p *pgDb) GetHBDocType() ([]model.HBDocType, error) {
 	hbtypes := []model.HBDocType{}
-	rows, err := p.dbConn.Query(`SELECT name FROM hbtype`)
+	rows, err := p.dbConn.Query(`SELECT id, name FROM hbtype`)
 	if err != nil {
 		log.Printf("error GetHBDocType: %v", err)
 		return nil, err
@@ -553,9 +558,30 @@ func (p *pgDb) GetHBDocType() ([]model.HBDocType, error) {
 
 	for rows.Next() {
 		hbtype := model.HBDocType{}
-		err := rows.Scan(&hbtype.Name)
+		err := rows.Scan(&hbtype.ID, &hbtype.Name)
 		if err != nil {
 			log.Printf("error GetHBDocType: %v", err)
+			continue
+		}
+		hbtypes = append(hbtypes, hbtype)
+	}
+	return hbtypes, nil
+}
+
+func (p *pgDb) Get2HBDocType(codeFragment string) ([]model.HBDocType, error) {
+	hbtypes := []model.HBDocType{}
+	rows, err := p.dbConn.Query(`SELECT id, name FROM hbtype WHERE name LIKE '%' || $1 || '%'`, codeFragment)
+	if err != nil {
+		log.Printf("error GetHBDocType: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		hbtype := model.HBDocType{}
+		err := rows.Scan(&hbtype.ID, &hbtype.Name)
+		if err != nil {
+			log.Printf("error Get2HBDocType: %v", err)
 			continue
 		}
 		hbtypes = append(hbtypes, hbtype)

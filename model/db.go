@@ -30,4 +30,5 @@ type db interface {
 	GetHBDocLabel() ([]HBDocLabel, error)
 	CreateHBDocType(hbtype HBDocType) error
 	GetHBDocType() ([]HBDocType, error)
+	Get2HBDocType(codeFragment string) ([]HBDocType, error)
 }

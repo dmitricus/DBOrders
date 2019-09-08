@@ -1,9 +1,9 @@
 {{define "body"}}
-<form action="/orders/create" method="POST" enctype="multipart/form-data">
+<form action="/orders/create" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
     <div class="form-row">
         <div class="col-md-2 mb-3">
             <label for="validationDefault01">Тип документа</label>
-            <select class="custom-select" name="DocType">
+            <select class="custom-select" name="DocType" required>
                     <option selected></option>
                 {{ range .HBDocType }}
                     <option value="{{ .Name }}">{{ .Name }}</option>
@@ -12,16 +12,16 @@
         </div>
         <div class="col-md-2 mb-3">
             <label for="validationDefault02">Вид документа</label>
-            <select class="custom-select" name="KindOfDoc">
+            <select class="custom-select" name="KindOfDoc" required>
                     <option selected></option>
                 {{ range .HBKindOfDoc }}
                     <option value="{{ .Name }}">{{ .Name }}</option>
                 {{ end }}
             </select>
         </div>
-        <div class="col-md-3 mb-3">
+        <div class="col-md-2 mb-3">
             <label for="validationDefaultUsername">Штамп секретности</label>
-            <select class="custom-select" name="DocLabel">
+            <select class="custom-select" name="DocLabel" required>
                     <option selected></option>
                 {{ range .HBDocLabel }}
                     <option value="{{ .Name }}">{{ .Name }}</option>
@@ -32,15 +32,15 @@
     <div class="form-row">
         <div class="col-md-2 mb-3">
             <label for="validationDefault03">Дата регистрации</label>
-            <input type="date" class="form-control" id="validationDefault03" name="RegDate" placeholder="Дата">
+            <input type="date" class="form-control" name="RegDate" placeholder="Дата" required>
         </div>
         <div class="col-md-2 mb-3">
             <label for="validationDefault03">Регистрационный номер</label>
-            <input type="text" class="form-control" id="validationDefault03" name="RegNumber" placeholder="Номер">
+            <input type="text" class="form-control" name="RegNumber" placeholder="Номер" required>
         </div>
         <div class="col-md-3 mb-3">
             <label for="validationDefault03">Описание</label>
-            <input type="text" class="form-control" id="validationDefault03" name="Description" placeholder="Описание">
+            <input type="text" class="form-control" name="Description" placeholder="Описание" required>
         </div>
     </div><!--
     <div class="form-row">
@@ -51,24 +51,62 @@
     </div>-->
     <div class="form-row">
         <div class="col-md-7 mb-3">
-            <input type="file" class="custom-file-input" id="customFileLang" name="FileOriginal" lang="es" accept="application/msword, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-            <label class="custom-file-label" for="customFileLang">Оригинал</label>
+            <div class="custom-file">
+                <input type="file" class="custom-file-input" id="FileOriginal" name="FileOriginal" accept=".doc, .docx, .odt" required>
+                <label class="custom-file-label" for="FileOriginal">Оригинал</label>
+            </div>
         </div>
     </div>
     <div class="form-row">
         <div class="col-md-7 mb-3">
-            <input type="file" class="custom-file-input" id="customFileLang" name="FileCopy" lang="es" accept="application/pdf">
-            <label class="custom-file-label" for="customFileLang">Копия</label>
+            <div class="custom-file">
+                <input type="file" class="custom-file-input" id="FileCopy" name="FileCopy" accept="application/pdf" required>
+                <label class="custom-file-label text-truncate" for="FileCopy">Копия</label>
+            </div>
         </div>
     </div>
     <div class="form-group row">
         <div class="col-sm-10">
             <div class="custom-control custom-switch">
             <input type="checkbox" class="custom-control-input" id="customSwitch1">
-            <label class="custom-control-label" for="customSwitch1">Активность приказа</label>
+            <label class="custom-control-label text-truncate" for="customSwitch1">Активность приказа</label>
             </div>
         </div>
     </div>
     <div class="form-row"><button class="btn btn-primary" type="submit">Отправить</button></div>
 </form>
+<script>
+// Example starter JavaScript for disabling form submissions if there are invalid fields
+(function() {
+  'use strict';
+  window.addEventListener('load', function() {
+    // Fetch all the forms we want to apply custom Bootstrap validation styles to
+    var forms = document.getElementsByClassName('needs-validation');
+    // Loop over them and prevent submission
+    var validation = Array.prototype.filter.call(forms, function(form) {
+      form.addEventListener('submit', function(event) {
+        if (form.checkValidity() === false) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  }, false);
+})();
+</script>
+<script>
+    $('#FileOriginal').on('change',function(event){
+        //get the file name
+        var fileName = $(this).val();
+        //replace the "Choose a file" label
+        $(this).next('.custom-file-label').html(event.target.files[0].name);
+    })
+    $('#FileCopy').on('change',function(event){
+        //get the file name
+        var fileName = $(this).val();
+        //replace the "Choose a file" label
+        $(this).next('.custom-file-label').html(event.target.files[0].name);
+    })
+</script>
 {{end}}

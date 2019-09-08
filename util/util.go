@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -82,11 +83,21 @@ func UploadFile(src multipart.File, handler *multipart.FileHeader) (string, erro
 	}
 	defer dst.Close()
 	io.Copy(dst, src)
-
-	fmt.Printf("Путь к файлу: %+v\n", path)
-	fmt.Printf("Загружен файл: %+v\n", handler.Filename)
-	fmt.Printf("Размер файла: %+v\n", handler.Size)
-	fmt.Printf("MIME Header: %+v\n", handler.Header)
-
+	/*
+		fmt.Printf("Путь к файлу: %+v\n", path)
+		fmt.Printf("Загружен файл: %+v\n", handler.Filename)
+		fmt.Printf("Размер файла: %+v\n", handler.Size)
+		fmt.Printf("MIME Header: %+v\n", handler.Header)
+	*/
 	return path, err
+}
+
+func ReplicatorParenthesis(number int) string {
+	var buffer bytes.Buffer
+	if number > 0 && number <= 5 {
+		for n := 1; n < number; n++ {
+			buffer.WriteString("(")
+		}
+	}
+	return buffer.String()
 }
