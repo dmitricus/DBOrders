@@ -804,6 +804,7 @@ func DeleteUserHandler(config Config, m *model.Model) http.HandlerFunc {
 	}
 }
 
+// Автозаполнение
 func Select2Handler(config Config, m *model.Model) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -823,7 +824,7 @@ func Select2Handler(config Config, m *model.Model) http.HandlerFunc {
 			return
 		}
 		//var data = map[int]string{1: "приказ", 2: "распоряжение", 3: "постановление"}
-		// create json response from struct
+		// создаем json и отдаем обратно клиенту AJAX
 		a, err := json.Marshal(hbtype)
 		if err != nil {
 			log.Println("ERROR: " + err.Error())

@@ -5,10 +5,12 @@ $(document).ready(function() {
     $(".js-data-json-ajax").select2({
         minimumInputLength: 3, // минимальная длинна ввода, после которой можно отправлять запрос на сервер
         allowClear: true,
+        theme: "bootstrap",
+        language: "ru",
         placeholder: "---",
         ajax: {
             url: "/select2", // адрес бэкэн-обработчика (url)
-            //delay: 250,
+            delay: 250,
             type: "post",
             contentType: 'application/json; charset=utf-8',
             dataType: "json",
@@ -49,7 +51,7 @@ $(document).ready(function() {
                 alert("Ошибка");
             }*/
         },
-        escapeMarkup: function (markup) { return markup; }
+        //escapeMarkup: function (markup) { return markup; }
     });
 });
 </script>

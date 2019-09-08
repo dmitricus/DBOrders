@@ -7,24 +7,23 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func (p *pgDb) Select() ([]model.User, error) {
-	users := []model.User{}
-	rows, err := p.dbConn.Query(`SELECT id, username, password, created, email, is_admin, 
-	(SELECT title FROM departaments WHERE departaments.id = users.departament_id) AS title FROM users`)
+func (p *pgDb) Get2HBDocType(codeFragment string) ([]model.HBDocType, error) {
+	hbtypes := []model.HBDocType{}
+	rows, err := p.dbConn.Query(`SELECT id, name FROM hbtype WHERE LOWER(name) LIKE '%' || LOWER($1) || '%'`, codeFragment)
 	if err != nil {
-		log.Printf("error GetUsers: %v", err)
+		log.Printf("error GetHBDocType: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		user := model.User{}
-		err := rows.Scan(&user.ID, &user.Username, &user.Password, &user.Created, &user.Email, &user.IsAdmin, &user.Title)
+		hbtype := model.HBDocType{}
+		err := rows.Scan(&hbtype.ID, &hbtype.Name)
 		if err != nil {
-			log.Printf("error GetUsers: %v", err)
+			log.Printf("error Get2HBDocType: %v", err)
 			continue
 		}
-		users = append(users, user)
+		hbtypes = append(hbtypes, hbtype)
 	}
-	return users, nil
+	return hbtypes, nil
 }
